@@ -2,7 +2,7 @@
 
 **Recreating [Visualizing MBTA Data](https://mbtaviz.github.io/) for the UK rail network, powered by Network Rail Darwin data, hosted on Render.com (efficiency-first).**
 
-- **Spec version:** 1.1 (2026-08-02 audit)
+- **Spec version:** 1.2 (2026-08-02: + §7 branch model)
 - **Date:** 2026-08-02
 - **Status:** Draft for review
 - **Repository:** `marey` (this directory). Note: a working implementation scaffold now exists alongside the spec (fixtures, build, budgets, and reference code) — it is a reference, not the deliverable; keep or discard as you prefer.
@@ -322,6 +322,7 @@ services:
   - type: web
     name: ukrail-viz
     runtime: static
+    branch: prod                 # deploy branch — Render auto-deploys ONLY this (see §7.2)
     buildCommand: npm run build          # generates dist/ from src/ + data/
     staticPublishPath: dist
     headers:
@@ -349,6 +350,7 @@ services:
 - Public repos get free Actions minutes (scheduled workflows in public repos are auto-disabled after 60 days without activity — keep the repo active or re-enable via `gh workflow enable`).
 - **Alternative triggers (fallback):** cron-job.org (free, up to 60 runs/h) hitting the Render **Deploy Hook URL** (unique per service) — no GitHub dependency.
 - **Avoid:** Render cron jobs ($1/mo+ min) and background workers (no free tier) unless we later move off the free plan.
+- **Branch model:** `main` is the integration branch — all code and the Actions data pipeline land there. `prod` is the release branch Render deploys from (`branch: prod` in §7.1) and is kept **always a fast-forward of `main`**: after every workflow run the bot pushes `origin main:prod` (T7.3). Nobody commits to `prod`; hotfixes flow through `main` and reach `prod` on the next FF push. A divergent `prod` makes the FF push fail loudly — reconcile with `git switch prod && git reset --hard main && git push --force-with-lease origin prod`.
 
 ### 7.3 Render CLI usage
 
