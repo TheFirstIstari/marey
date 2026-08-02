@@ -6,14 +6,13 @@
   <title>UK Rail Viz</title>
   <meta name="description" content="Visualising the UK rail network: train trajectories, station traffic, congestion and delay, commutes, and live train positions — built from Network Rail Darwin data.">
   <link rel="stylesheet" href="assets/styles/main.css">
-  <script type="module" src="assets/js/marey.js"></script>
-  <script type="module" src="assets/js/people.js"></script>
 </head>
 <body>
   <header class="site-header">
     <h1>UK Rail Viz</h1>
     <p class="tagline">An MBTA-Viz-style look at Britain's railways, powered by Network Rail Darwin data (spec: <code>SPEC.md</code>).</p>
     <p id="data-status" class="data-status" role="status">Loading data…</p>
+    <div class="viz-slot" data-viz-slot="marey-header"></div>
   </header>
 
   <main>
@@ -49,7 +48,15 @@
   </main>
 
   <footer class="site-footer">
-    <p>Data: Network Rail Darwin (via Rail Data Marketplace) and ORR station usage. Built as a static site — no server.</p>
+    <p>Data: Network Rail <a href="https://www.nationalrail.co.uk/developers/darwin-data-feeds/">Darwin</a> timetable &amp; performance feeds, licensed under the
+    <a href="https://www.nationalrail.co.uk/">Open Government Licence v2.0</a> with NRE variations.
+    <img src="assets/img/nre-logo.svg" alt="Powered by National Rail Enquiries" width="120" height="28" loading="lazy"></p>
+    <p>Live platform numbers are time-bound and suppressed per feed direction. Not an official National Rail product.</p>
   </footer>
+
+  <script type="module">
+    import { bootSections } from './assets/js/sections.js';
+    bootSections();
+  </script>
 </body>
 </html>

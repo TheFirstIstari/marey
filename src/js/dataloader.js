@@ -1,41 +1,41 @@
 // Minimal, dependency-free loader for UK Rail Viz.
-// Fetches the precomputed JSON payloads from /data, reports status in the
-// header, and exposes the payloads to renderers via the `ready` promise.
-// Section visualisations import this module and await `ready`.
-const DATA = [
-  ['marey',  'data/marey-trips.json'],
-  ['network','data/network.json'],
-  ['usage',  'data/station-usage.json'],
-  ['freq',   'data/station-frequency.json'],
-  ['delay',  'data/delay.json'],
-  ['delays', 'data/average-actual-delays.json'],
-  ['commute','data/commute-PAD.json'],
-  ['live',   'data/live.json'],
-  ['toc',    'data/toc.json'],
-];
+// Fetches the precomputed JSON payloads from /data in parallel,
+// reports status in the header, and exposes the payloads to renderers
+// via the `ready` promise. Section visualisations import this module
+// and await `ready`.
 
-const statusEl = document.getElementById('data-status');
-const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
+export const LOAD_PLAN = {
+  common: [
+    ['stations', 'data/stations.json'],
+    ['network', 'data/network.json'],
+    ['toc', 'data/toc.json'],
+  ],
+  sections: {
+    marey: [['index', 'data/marey-index.json']],
+    usage: [['freq', 'data/station-frequency.json'], ['usage', 'data/station-usage.json']],
+    delay: [['delay', 'data/delay.json'], ['delays', 'data/average-actual-delays.json']],
+    commute: [],            // per-origin files load on demand (T6.1)
+    live: [['live', 'data/live.json']],
+  },
+};
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  return res.json();
+}
 
 export const ready = (async () => {
-  const payloads = {};
-  const lines = [];
-  for (const [key, url] of DATA) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      payloads[key] = await res.json();
-      lines.push(`${key}: ${kb(JSON.stringify(payloads[key]).length)}`);
-    } catch (err) {
-      lines.push(`${key}: failed (${err.message})`);
-    }
+  const out = {};
+  const all = [...LOAD_PLAN.common, ...Object.values(LOAD_PLAN.sections).flat()];
+  const results = await Promise.allSettled(all.map(async ([key, url]) => [key, await fetchJson(url)]));
+  for (const r of results) {
+    if (r.status === 'fulfilled') out[r.value[0]] = r.value[1];
+    else console.warn('dataloader:', r.reason?.message ?? r.reason);
   }
-  const failed = lines.filter((l) => l.includes('failed'));
-  if (statusEl) {
-    statusEl.textContent = failed.length
-      ? `⚠ ${failed.length} payload(s) failed to load — ${lines.join(', ')}`
-      : `✓ ${DATA.length} payloads loaded — ${lines.join(', ')}`;
-  }
-  window.UKRailViz = { data: payloads, loadedAt: Date.now() };
-  return payloads;
+  const ok = results.filter((r) => r.status === 'fulfilled').length;
+  const el = document.getElementById('data-status');
+  if (el) { el.textContent = `✓ ${ok}/${all.length} payloads loaded`; el.setAttribute('aria-live', 'polite'); }
+  window.UKRailViz = { data: out, loadedAt: Date.now() };
+  return out;
 })();
