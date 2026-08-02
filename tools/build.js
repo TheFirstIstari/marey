@@ -67,6 +67,22 @@ function build() {
   }
   writeFileSync(htmlPath, html);
 
+  // Rewrite dynamic import() references in JS files so hashed filenames resolve
+  // e.g. import('./marey.js') → import('./marey.e6d496cf.js')
+  for (const rel of walk(DIST)) {
+    if (!rel.endsWith('.js')) continue;
+    const abs = join(DIST, rel);
+    let content = readFileSync(abs, 'utf8');
+    for (const [oldUrl, newUrl] of assetRename) {
+      const oldFile = basename(oldUrl);
+      const newFile = basename(newUrl);
+      // Replace exact import paths: './marey.js' → './marey.e6d496cf.js'
+      content = content.split(`'./${oldFile}'`).join(`'./${newFile}'`);
+      content = content.split(`"./${oldFile}"`).join(`"./${newFile}"`);
+    }
+    writeFileSync(abs, content);
+  }
+
   // Size report + budget enforcement
   const files = walk(DIST).map((rel) => ({ rel, bytes: statSync(join(DIST, rel)).size })).sort((a, b) => b.bytes - a.bytes);
   const total = files.reduce((s, f) => s + f.bytes, 0);

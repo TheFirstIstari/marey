@@ -14,7 +14,8 @@
     "test": "node tools/fixtures.js && node tools/smoke-test.js && node --test tests/*.test.js",
     "collect": "node tools/etl/collect.js",
     "derive": "node tools/etl/derive.js",
-    "pipeline": "node tools/etl/collect.js && node tools/etl/derive.js && node tools/smoke-test.js && npm run build"
+    "pipeline": "node tools/etl/collect.js && node tools/etl/derive.js && node tools/smoke-test.js && npm run build",
+    "dev": "node tools/dev-server.mjs dist 3000"
   },
   "devDependencies": {
     "saxes": "^6.0.0",
