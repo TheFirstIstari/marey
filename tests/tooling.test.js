@@ -8,6 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { secOfDayMin, hhmm, linScale, stationY, stationIndex, tripPoints } from '../src/js/marey-math.js';
 import { heatColor, freqTotal, usageSorted, nodeExtents, linePath } from '../src/js/people-math.js';
+import { percentilePath, downsample, nearestHit, parseHash } from '../src/js/commute-math.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -176,4 +177,40 @@ test('people math: fixture-derived values (PAD hourly total, network extents, li
   assert.ok(path.startsWith('M'), 'path starts with a move');
   assert.ok(path.includes('L'), 'path has line segments');
   assert.equal((path.match(/L/g) || []).length, seg.stations.length - 1, 'one L per station hop');
+});
+
+// --- T6.1: commute-math.js helpers ---
+
+test('percentilePath builds band + median from result rows', () => {
+  const result = [[5, [10, 20, 30], [2, 4, 6]], [6, [12, 22, 32], [3, 5, 7]]];
+  const p = percentilePath(result);
+  assert.ok(p.areaD.startsWith('M') && p.areaD.endsWith('Z'), 'areaD is a closed path');
+  assert.equal(p.p50.length, result.length, 'p50 has one point per result row');
+  assert.equal(p.p10.length, result.length, 'p10 has one point per result row');
+  assert.equal(p.p90.length, result.length, 'p90 has one point per result row');
+});
+
+test('downsample caps length at max', () => {
+  const pts = Array.from({ length: 5000 }, (_, i) => [i, i % 100]);
+  assert.ok(downsample(pts, 1000).length <= 1000);
+  assert.equal(downsample(pts, 1000).length, 1000, 'keeps exactly max when oversampled');
+  assert.equal(downsample(pts, 5000).length, 5000, 'no downsampling when under max');
+  assert.equal(downsample([], 1000).length, 0, 'empty input gives empty output');
+});
+
+test('nearestHit finds the closest point within radius', () => {
+  const pts = [[0, 0], [100, 100], [200, 0]];
+  assert.equal(nearestHit(98, 99, pts, 8), 1, 'finds point within radius');
+  assert.equal(nearestHit(500, 500, pts, 8), -1, 'returns -1 when no point in radius');
+  assert.equal(nearestHit(0, 0, pts, 8), 0, 'finds point at exact location');
+  assert.equal(nearestHit(0, 0, pts, 0), -1, 'radius 0 misses unless exact');
+});
+
+test('parseHash handles #your-commute.FST.LST', () => {
+  assert.deepEqual(parseHash('#your-commute.FST.LST'), { from: 'FST', to: 'LST' });
+  assert.deepEqual(parseHash('#your-commute.PAD.BRI'), { from: 'PAD', to: 'BRI' });
+  assert.equal(parseHash('#trains'), null);
+  assert.equal(parseHash('#your-commute.FST'), null);
+  assert.equal(parseHash(''), null);
+  assert.equal(parseHash(null), null);
 });

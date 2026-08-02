@@ -9,7 +9,6 @@ const DATA = [
   ['freq',   'data/station-frequency.json'],
   ['delay',  'data/delay.json'],
   ['delays', 'data/average-actual-delays.json'],
-  ['commute','data/commute-PAD.json'],
   ['live',   'data/live.json'],
   ['toc',    'data/toc.json'],
 ];
