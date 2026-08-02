@@ -7,12 +7,10 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { secOfDayMin, hhmm, linScale, stationY, stationIndex, tripPoints } from '../src/js/marey-math.js';
-import { heatColor, freqTotal, usageSorted, nodeExtents, linePath } from '../src/js/people-math.js';
-<<<<<<< HEAD
+import { heatColor, freqTotal, usageSorted, nodeExtents, linePath, stationDetail } from '../src/js/people-math.js';
 import { LOAD_PLAN } from '../src/js/dataloader.js';
 import { dayBuckets, seriesTotals, horizonAreas, ratioColor, scrubAt } from '../src/js/delay-math.js';
 import { percentilePath, downsample, nearestHit, parseHash } from '../src/js/commute-math.js';
->>>>>>> t6.1
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -184,8 +182,45 @@ test('people math: fixture-derived values (PAD hourly total, network extents, li
   assert.equal((path.match(/L/g) || []).length, seg.stations.length - 1, 'one L per station hop');
 });
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+// --- T5.1: stationDetail ---
+
+test('people math: stationDetail returns 24 hourly rows with arrivals/departures', () => {
+  const freq = { stops: [{ crs: 'PAD', times: [
+    { time: 0, arrivals: 2, departures: 3 },
+    ...Array.from({ length: 23 }, (_, i) => ({ time: (i + 1) * 3600, arrivals: 0, departures: 0 })),
+  ] }] };
+  const d = stationDetail('PAD', freq);
+  assert.equal(d.hours.length, 24, '24 hourly entries');
+  assert.equal(d.hours[0].arrivals, 2, 'first hour arrivals');
+  assert.equal(d.hours[0].departures, 3, 'first hour departures');
+  assert.equal(d.hours[1].arrivals, 0, 'second hour arrivals');
+  assert.ok(Array.isArray(d.hours), 'hours is an array');
+  for (const h of d.hours) {
+    assert.ok('hour' in h, 'each hour has hour field');
+    assert.ok('arrivals' in h, 'each hour has arrivals field');
+    assert.ok('departures' in h, 'each hour has departures field');
+  }
+});
+
+test('people math: stationDetail weekdayAvg and offpeakAvg from averagesByType', () => {
+  const freq = { stops: [{ crs: 'PAD', times: [
+    { time: 0, arrivals: 1, departures: 1 },
+    ...Array.from({ length: 23 }, (_, i) => ({ time: (i + 1) * 3600, arrivals: 0, departures: 0 })),
+  ], weekdayHours: 12, offpeakHours: 12,
+    averagesByType: { weekday: { arrivals: 5, departures: 4 }, offpeak: { arrivals: 1, departures: 1 } } }] };
+  const d = stationDetail('PAD', freq);
+  assert.equal(d.weekdayAvg, 9, 'weekdayAvg = arrivals + departures');
+  assert.equal(d.offpeakAvg, 2, 'offpeakAvg = arrivals + departures');
+});
+
+test('people math: stationDetail returns zero for missing station', () => {
+  const freq = { stops: [{ crs: 'PAD', times: [] }] };
+  const d = stationDetail('MISSING', freq);
+  assert.equal(d.hours.length, 24);
+  assert.equal(d.weekdayAvg, 0);
+  assert.equal(d.offpeakAvg, 0);
+});
+
 test('LOAD_PLAN covers every §6.4 artifact with no duplicates', () => {
   const urls = new Set();
   for (const [, u] of LOAD_PLAN.common) assert.ok(!urls.has(u) && urls.add(u));
