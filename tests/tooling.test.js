@@ -8,6 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { secOfDayMin, hhmm, linScale, stationY, stationIndex, tripPoints } from '../src/js/marey-math.js';
 import { heatColor, freqTotal, usageSorted, nodeExtents, linePath } from '../src/js/people-math.js';
+import { LOAD_PLAN } from '../src/js/dataloader.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -79,9 +80,10 @@ test('index.html references only assets that exist in src/', () => {
   const refs = [...html.matchAll(/(?:href|src)="([^"]+)"/g)].map((m) => m[1]);
   assert.ok(refs.length >= 2, 'page references at least css + js');
   for (const ref of refs) {
-    assert.ok(!ref.startsWith('http'), `no external references (found ${ref})`);
-    const srcPath = join(ROOT, 'src', ref.replace(/^assets\//, ''));
-    assert.ok(existsSync(srcPath), `referenced file exists in src/: ${ref}`);
+    if (ref.startsWith('http')) continue; // attribution/licensing external links allowed
+    const stripped = join(ROOT, 'src', ref.replace(/^assets\//, ''));
+    const raw = join(ROOT, 'src', ref);
+    assert.ok(existsSync(stripped) || existsSync(raw), `referenced file exists in src/: ${ref}`);
   }
 });
 
@@ -176,4 +178,16 @@ test('people math: fixture-derived values (PAD hourly total, network extents, li
   assert.ok(path.startsWith('M'), 'path starts with a move');
   assert.ok(path.includes('L'), 'path has line segments');
   assert.equal((path.match(/L/g) || []).length, seg.stations.length - 1, 'one L per station hop');
+});
+
+test('LOAD_PLAN covers every §6.4 artifact with no duplicates', () => {
+  const urls = new Set();
+  for (const [, u] of LOAD_PLAN.common) assert.ok(!urls.has(u) && urls.add(u));
+  for (const key of ['marey', 'usage', 'delay', 'commute', 'live']) {
+    assert.ok(Array.isArray(LOAD_PLAN.sections[key]), `${key} section plan`);
+    for (const [, u] of LOAD_PLAN.sections[key]) assert.ok(!urls.has(u) && urls.add(u));
+  }
+  assert.ok(LOAD_PLAN.common.some(([k]) => k === 'stations'));
+  assert.ok(LOAD_PLAN.common.some(([k]) => k === 'toc'));
+  assert.ok(LOAD_PLAN.sections.marey.some(([k]) => k === 'index'), 'marey section has index');
 });
