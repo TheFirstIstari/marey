@@ -19,16 +19,23 @@ const hasRawMovements = existsSync(join(ROOT, 'raw', 'movements'));
 
 function findRawFiles(rawDir) {
   const dir = join(ROOT, rawDir);
-  let files;
-  if (existsSync(dir)) {
-    files = readdirSync(dir);
-  } else {
-    const ttDir = join(dir, 'timetable');
-    const refDir = join(dir, 'ref');
-    if (existsSync(ttDir)) files = readdirSync(ttDir);
-    else if (existsSync(refDir)) files = readdirSync(refDir);
-    else return { refFile: null, ttFile: null };
+  const ttDir = join(dir, 'timetable');
+  const refDir = join(dir, 'ref');
+
+  // If rawDir has timetable/ and ref/ subdirectories, look inside them.
+  if (existsSync(ttDir) || existsSync(refDir)) {
+    const ttFiles = existsSync(ttDir) ? readdirSync(ttDir) : [];
+    const refFiles = existsSync(refDir) ? readdirSync(refDir) : [];
+    const refFile = refFiles.find((f) => f.includes('_ref_') && f.endsWith('.xml.gz'));
+    const ttFile = ttFiles.find((f) => f.includes('_v8.xml.gz') && !f.includes('_ref_'));
+    return {
+      refFile: refFile ? join(refDir, refFile) : null,
+      ttFile: ttFile ? join(ttDir, ttFile) : null,
+    };
   }
+
+  // Otherwise look directly in rawDir.
+  const files = existsSync(dir) ? readdirSync(dir) : [];
   const refFile = files.find((f) => f.includes('_ref_') && f.endsWith('.xml.gz'));
   const ttFile = files.find((f) => f.includes('_v8.xml.gz') && !f.includes('_ref_'));
   return {
@@ -514,9 +521,13 @@ function percentile(sorted, p) {
 
 const __filename = fileURLToPath(import.meta.url);
 if (process.argv[1]?.endsWith('derive.js')) {
-  if (hasRawTimetable && hasRawMovements) {
-    console.log('derive: raw timetable + movements present — running real derivation (M1+, TODO)');
-    process.exit(1);
+  if (hasRawTimetable) {
+    const poc = JSON.parse(readFileSync(join(ROOT, 'config', 'poc.json'), 'utf8'));
+    const stations = readStationsJson();
+    console.log('derive: raw timetable present — running planned derivation (M1)');
+    await derivePlanned({ cfg: poc, stations, rawDir: 'raw' });
+    console.log('derive: planned artifacts written to data/');
+    process.exit(0);
   }
   console.log('derive: no raw Darwin input — keeping data/ fixtures (site remains deployable)');
   process.exit(0);
