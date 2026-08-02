@@ -120,3 +120,14 @@ main { max-width: 64rem; margin: 0 auto; padding: 0 1.25rem 3rem; }
 .delay-chart .horizon-area { mix-blend-mode: multiply; }
 .delay-chart .delay-band { opacity: .85; }
 .delay-chart .scrub-line { pointer-events: none; }
+
+/* Live overlay (T6.1) */
+.live-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.live-table th, .live-table td { padding: .3rem .5rem; text-align: left; border-bottom: 1px solid var(--line); }
+.live-table th { color: var(--accent); font-weight: 600; }
+.live-table td:nth-child(4) { text-align: right; font-variant-numeric: tabular-nums; }
+.live-status { color: var(--muted); font-size: .85rem; margin: 0 0 .5rem; }
+.live-error { color: #ef4444; }
+.live-map { width: 100%; height: auto; display: block; }
+.live-dot { cursor: default; }
+.live-label { fill: var(--ink); font-family: inherit; }

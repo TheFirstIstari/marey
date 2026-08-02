@@ -6,13 +6,11 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { secOfDayMin, hhmm, linScale, stationY, stationIndex, tripPoints } from '../src/js/marey-math.js';
+import { secOfDayMin, hhmm, linScale, stationY, stationIndex, tripPoints, pickDayLines } from '../src/js/marey-math.js';
 import { heatColor, freqTotal, usageSorted, nodeExtents, linePath } from '../src/js/people-math.js';
-<<<<<<< HEAD
 import { LOAD_PLAN } from '../src/js/dataloader.js';
 import { dayBuckets, seriesTotals, horizonAreas, ratioColor, scrubAt } from '../src/js/delay-math.js';
 import { percentilePath, downsample, nearestHit, parseHash } from '../src/js/commute-math.js';
->>>>>>> t6.1
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -120,6 +118,12 @@ test('marey math helpers behave', () => {
   assert.deepEqual(pts[1], [x(secOfDayMin(1743577200)), y(1), 'BRI']);
 });
 
+test('pickDayLines resolves the index into per-line files', () => {
+  const idx = { days: [{ date: '2025-04-01', lines: [{ line: 'gwml', count: 12 }] }], lines: [{ id: 'gwml' }] };
+  const out = pickDayLines(idx, '2025-04-01');
+  assert.deepEqual(out, [{ line: 'gwml', file: 'data/marey-trips-2025-04-01-gwml.json', tripCount: 12 }]);
+});
+
 test('people math: heatColor ramps blue→amber and clamps', () => {
   const low = heatColor(0, 100);
   const high = heatColor(100, 100);
@@ -184,8 +188,6 @@ test('people math: fixture-derived values (PAD hourly total, network extents, li
   assert.equal((path.match(/L/g) || []).length, seg.stations.length - 1, 'one L per station hop');
 });
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 test('LOAD_PLAN covers every §6.4 artifact with no duplicates', () => {
   const urls = new Set();
   for (const [, u] of LOAD_PLAN.common) assert.ok(!urls.has(u) && urls.add(u));
@@ -289,4 +291,16 @@ test('parseHash handles #your-commute.FST.LST', () => {
   assert.equal(parseHash('#your-commute.FST'), null);
   assert.equal(parseHash(''), null);
   assert.equal(parseHash(null), null);
+});
+
+// --- T6.1: live-math.js applyDelta ---
+
+import { applyDelta } from '../src/js/live-math.js';
+
+test('applyDelta upserts, removes and sorts', () => {
+  const base = [{ train_id: '1A01', lateness_min: 0 }, { train_id: '1A02', lateness_min: 5 }];
+  const d = { changed: [{ train_id: '1A01', lateness_min: 9 }], removed: ['1A02'] };
+  const out = applyDelta(base, d);
+  assert.deepEqual(out.map((t) => t.train_id), ['1A01']);
+  assert.equal(out[0].lateness_min, 9);
 });
