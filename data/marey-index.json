@@ -1,1 +1,1 @@
-{"days":[{"date":"2025-04-01","lines":[{"line":"gwml","count":3}]}],"lines":[{"id":"gwml","name":"Great Western Main Line","color":"#0a7d33"}]}
+{"date":"2025-04-01","lines":["gwml","c2c","ga","xc"]}
