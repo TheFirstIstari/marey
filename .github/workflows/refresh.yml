@@ -1,20 +1,27 @@
 name: refresh-uk-rail-data
 
-# $0 refresh pipeline (SPEC.md §7.2): fetch Darwin → derive artifacts → commit data/
-# → git push → Render auto-deploys the static site (CDN invalidates on deploy).
+# $0 refresh pipeline (SPEC.md §7.2): fetch Darwin → derive artifacts →
+# test → build → commit data/ → FF-push main → auto-deploy prod → Render.
 # Credentials via GitHub repo secrets (mirror into Render env for the blueprint):
-#   DARWIN_S3_KEY_ID, DARWIN_S3_SECRET, NROD_USER, NROD_PASS, and GH_PAT (repo scope)
-#   for the commit+push step. Until secrets exist the pipeline keeps fixtures green.
+#   DARWIN_S3_KEY_ID, DARWIN_S3_SECRET, NROD_USER, NROD_PASS, R2_ENDPOINT,
+#   R2_BUCKET, R2_PROFILE, and GH_PAT (repo scope) for the commit+push step.
+# Until secrets exist the pipeline keeps fixtures green.
 
 on:
   schedule:
     - cron: '*/15 * * * *'      # live overlay cadence (SPEC.md D2 default: 15 min)
+    - cron: '5 3 * * *'         # daily timetable + R2 mirror + HSP history
   workflow_dispatch: {}
   push:
+    branches: [main]
     paths: ['data/**']
 
 permissions:
   contents: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
 
 jobs:
   refresh:
@@ -25,7 +32,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci || npm install --no-audit --no-fund
+      - run: npm ci
 
       - name: Collect (skips cleanly without secrets)
         run: npm run collect
@@ -34,24 +41,37 @@ jobs:
           DARWIN_S3_SECRET: ${{ secrets.DARWIN_S3_SECRET }}
           NROD_USER: ${{ secrets.NROD_USER }}
           NROD_PASS: ${{ secrets.NROD_PASS }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PROFILE: ${{ secrets.R2_PROFILE }}
+          FETCH_AUX: 1
 
       - name: Derive artifacts
         run: npm run derive
 
-      - name: Smoke-test artifacts
-        run: npm run smoke
+      - name: Full test suite
+        run: npm test
+
+      - name: Build and budget check
+        run: npm run build
 
       - name: Commit data changes
         run: |
           git config user.name "uk-rail-viz bot"
           git config user.email "bot@ukrailviz.local"
           if [ -n "$(git status --porcelain data/)" ]; then
-            git add data/ raw/ 2>/dev/null || git add data/
+            git add data/
             git commit -m "chore(data): refresh rail data [skip render]"
-            git push "https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${GITHUB_REF##*/}
+            git push "https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
           else
-            echo "no data changes — nothing to push"
+            echo "no data changes — nothing to commit"
           fi
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+
+      - name: FF-push main → prod (deploy branch)
+        run: |
+          git push origin main:prod || true
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
 
