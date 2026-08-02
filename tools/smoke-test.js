@@ -19,9 +19,19 @@ function load(name) {
   try { return JSON.parse(readFileSync(p, 'utf8')); } catch { failures.push(`unparseable ${name}`); return null; }
 }
 
-// 1. marey-trips — non-empty, sane trajectory shape
-const marey = load('marey-trips.json');
-check('marey-trips.json non-empty', Array.isArray(marey) && marey.length >= 1);
+// 1. marey-trips — non-empty, sane trajectory shape (read via index + day/line files)
+const idx = load('marey-index.json');
+let marey = [];
+if (idx && idx.days && idx.lines) {
+  for (const day of idx.days) {
+    for (const line of day.lines) {
+      const f = `marey-trips-${day.date}-${line.line}.json`;
+      const trips = load(f);
+      if (Array.isArray(trips)) marey = marey.concat(trips);
+    }
+  }
+}
+check('marey-trips (day+line) non-empty', Array.isArray(marey) && marey.length >= 1);
 if (Array.isArray(marey) && marey.length) {
   const t = marey[0];
   check('marey-trips: service+line+stops', t.service && t.line && Array.isArray(t.stops) && t.stops.length >= 2);

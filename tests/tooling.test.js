@@ -55,14 +55,22 @@ test('live.json has at least one train with position fields', () => {
   }
 });
 
-test('marey-trips.json is a non-empty, time-ordered trip set', () => {
-  const trips = readJson('data/marey-trips.json');
-  assert.ok(Array.isArray(trips) && trips.length >= 1, 'non-empty trips');
-  for (const trip of trips) {
-    assert.ok(trip.service && trip.line, 'trip has service and line');
-    assert.ok(Array.isArray(trip.stops) && trip.stops.length >= 2, 'trip has ≥2 stops');
-    assert.ok(trip.begin < trip.end, 'trip.begin < trip.end');
-    assert.ok(trip.begin > 1e9, 'plausible epoch timestamp');
+test('marey trips are split per day+line with an index', () => {
+  const idx = readJson('data/marey-index.json');
+  assert.ok(idx.days.length >= 1);
+  assert.ok(idx.lines.length >= 1);
+  for (const day of idx.days) {
+    for (const line of day.lines) {
+      const f = `data/marey-trips-${day.date}-${line.line}.json`;
+      const trips = readJson(f);
+      assert.ok(Array.isArray(trips) && trips.length >= 1, `${f} non-empty`);
+      for (const trip of trips) {
+        assert.ok(trip.service && trip.line, 'trip has service and line');
+        assert.ok(Array.isArray(trip.stops) && trip.stops.length >= 2, 'trip has ≥2 stops');
+        assert.ok(trip.begin < trip.end, 'trip.begin < trip.end');
+        assert.ok(trip.begin > 1e9, 'plausible epoch timestamp');
+      }
+    }
   }
 });
 
