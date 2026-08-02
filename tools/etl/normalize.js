@@ -28,7 +28,31 @@ function lastSunday(year, month, ref) {
 // Schedule identity per wiki: UID + start date + STP indicator (SPEC.md §3.2).
 export function scheduleKey(uid, startDate, stp) { return `${uid}|${startDate}|${stp}`; }
 
-// Placeholder for the STANOX→CRS map built from CORPUS/ref (M1).
-export function buildStationIndex(/* corpus, naptan */) {
-  return { corpus: [], naptan: [], byStanox: new Map(), byCrs: new Map() };
+/**
+ * Build a station index from the ref map and optional NaPTAN/ORR rows.
+ * Returns { corpus, naptan, byStanox: Map, byCrs: Map }.
+ * byCrs is populated from the ref map; byStanox is empty until CORPUS lands (M1.5).
+ */
+export function buildStationIndex(refMap, naptanRows, usageRows) {
+  const corpus = [];
+  const naptan = [];
+  const byStanox = new Map();
+  const byCrs = new Map();
+
+  // Populate byCrs from the ref map (TIPLOC → CRS mapping).
+  if (refMap && refMap.byTiploc) {
+    for (const [tiploc, entry] of refMap.byTiploc) {
+      if (entry.crs) {
+        byCrs.set(entry.crs, {
+          tiploc,
+          crs: entry.crs,
+          name: entry.name,
+          stanox: entry.stanox ?? null,
+          toc: entry.toc ?? null,
+        });
+      }
+    }
+  }
+
+  return { corpus, naptan, byStanox, byCrs };
 }
