@@ -111,9 +111,12 @@ main { max-width: 64rem; margin: 0 auto; padding: 0 1.25rem 3rem; }
 .map-node { fill: var(--panel); stroke: var(--muted); stroke-width: 1.5; cursor: pointer; }
 .map-node.active { fill: var(--accent); stroke: var(--ink); stroke-width: 2; }
 
-.site-footer {
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: .8rem;
-  padding: 1rem 1.25rem 2.5rem;
-}
+/* Congestion & Delay (M4) */
+.delay-panel { width: 100%; margin-bottom: 1.5rem; position: relative; }
+.delay-title { color: var(--accent); font-size: .95rem; margin: 0 0 .35rem; }
+.delay-chart { width: 100%; height: auto; display: block; }
+.delay-chart .grid-v { stroke: var(--line); stroke-width: 1; }
+.delay-chart .axis, .delay-chart .day-label { fill: var(--muted); font-size: 11px; font-family: inherit; }
+.delay-chart .horizon-area { mix-blend-mode: multiply; }
+.delay-chart .delay-band { opacity: .85; }
+.delay-chart .scrub-line { pointer-events: none; }

@@ -8,6 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { secOfDayMin, hhmm, linScale, stationY, stationIndex, tripPoints } from '../src/js/marey-math.js';
 import { heatColor, freqTotal, usageSorted, nodeExtents, linePath } from '../src/js/people-math.js';
+import { dayBuckets, seriesTotals, horizonAreas, ratioColor, scrubAt } from '../src/js/delay-math.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
@@ -176,4 +177,61 @@ test('people math: fixture-derived values (PAD hourly total, network extents, li
   assert.ok(path.startsWith('M'), 'path starts with a move');
   assert.ok(path.includes('L'), 'path has line segments');
   assert.equal((path.match(/L/g) || []).length, seg.stations.length - 1, 'one L per station hop');
+});
+
+// --- T5.1: delay-math helpers ---
+
+function makeDelay() {
+  const out = [];
+  for (let day = 0; day < 7; day++) {
+    for (let i = 0; i < 96; i++) {
+      const sec = i * 900;
+      const crs = i % 2 === 0 ? 'PAD' : 'RDG';
+      const ins = { [crs]: i === 0 ? 2 : i % 3 + 1 };
+      const outs = { [crs]: i === 0 ? 1 : i % 2 + 1 };
+      const delay = { day, secOfDay: sec, time: 0, ins, outs, ins_total: ins[crs], lines: [] };
+      if (i > 0 && i < 95) {
+        delay.lines = [{ line: 'gwml', delay_actual: { 'PAD|RDG': (Math.sin(i / 8) * 10 + 12) / 60 }, ins_total: ins[crs] }];
+      }
+      out.push(delay);
+    }
+  }
+  return out;
+}
+
+test('dayBuckets slices 96 buckets for one day and seriesTotals sums stations', () => {
+  const delay = makeDelay();
+  const b = dayBuckets(delay, 0);
+  assert.equal(b.length, 96);
+  assert.equal(seriesTotals(b[0]).ins, 2);
+  assert.equal(seriesTotals(b[0]).outs, 1);
+  const b1 = dayBuckets(delay, 1);
+  assert.equal(b1.length, 96);
+  assert.equal(b1[0].secOfDay, 0);
+  assert.equal(b1[95].secOfDay, 86400 - 900);
+});
+
+test('horizonAreas returns bandCount*2 area strings', () => {
+  const values = Array.from({ length: 96 }, (_, i) => Math.sin(i / 8) * 10 + 12);
+  const areas = horizonAreas(values, 3, 40);
+  assert.equal(areas.length, 6);
+  assert.ok(areas.every((a) => Array.isArray(a) && a.length === 3));
+  assert.ok(areas.every(([band]) => band >= 0 && band <= 3));
+  assert.ok(areas.every(([, , d]) => typeof d === 'string' && d.startsWith('M')));
+});
+
+test('ratioColor clamps and maps sign', () => {
+  assert.ok(ratioColor(-0.3).startsWith('rgb'), 'negative → greenish');
+  assert.ok(ratioColor(0.4).startsWith('rgb'), '+0.4 → reddish');
+  assert.equal(ratioColor(0), 'rgb(255,255,255)', 'zero → white');
+  assert.ok(ratioColor(-1).startsWith('rgb'), 'clamped negative');
+  assert.ok(ratioColor(1).startsWith('rgb'), 'clamped positive');
+});
+
+test('scrubAt binary-searches the nearest bucket', () => {
+  const buckets = dayBuckets(makeDelay(), 1);
+  const hit = scrubAt(buckets, 900 * 4.2);
+  assert.ok(Math.abs(hit.secOfDay - 900 * 4) <= 900, 'nearest bucket found');
+  const exact = scrubAt(buckets, 900 * 10);
+  assert.equal(exact.secOfDay, 900 * 10, 'exact match');
 });
