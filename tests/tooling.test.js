@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { secOfDayMin, hhmm, linScale, stationY, stationIndex, tripPoints } from '../src/js/marey-math.js';
+import { secOfDayMin, hhmm, linScale, stationY, stationIndex, tripPoints, pickDayLines } from '../src/js/marey-math.js';
 import { heatColor, freqTotal, usageSorted, nodeExtents, linePath, stationDetail } from '../src/js/people-math.js';
 import { LOAD_PLAN } from '../src/js/dataloader.js';
 import { dayBuckets, seriesTotals, horizonAreas, ratioColor, scrubAt } from '../src/js/delay-math.js';
@@ -116,6 +116,12 @@ test('marey math helpers behave', () => {
   assert.equal(pts.length, 2, 'off-segment stop skipped');
   assert.deepEqual(pts[0], [x(secOfDayMin(1743548400)), y(0), 'PAD']);
   assert.deepEqual(pts[1], [x(secOfDayMin(1743577200)), y(1), 'BRI']);
+});
+
+test('pickDayLines resolves the index into per-line files', () => {
+  const idx = { days: [{ date: '2025-04-01', lines: [{ line: 'gwml', count: 12 }] }], lines: [{ id: 'gwml' }] };
+  const out = pickDayLines(idx, '2025-04-01');
+  assert.deepEqual(out, [{ line: 'gwml', file: 'data/marey-trips-2025-04-01-gwml.json', tripCount: 12 }]);
 });
 
 test('people math: heatColor ramps blue→amber and clamps', () => {
@@ -324,4 +330,16 @@ test('parseHash handles #your-commute.FST.LST', () => {
   assert.equal(parseHash('#your-commute.FST'), null);
   assert.equal(parseHash(''), null);
   assert.equal(parseHash(null), null);
+});
+
+// --- T6.1: live-math.js applyDelta ---
+
+import { applyDelta } from '../src/js/live-math.js';
+
+test('applyDelta upserts, removes and sorts', () => {
+  const base = [{ train_id: '1A01', lateness_min: 0 }, { train_id: '1A02', lateness_min: 5 }];
+  const d = { changed: [{ train_id: '1A01', lateness_min: 9 }], removed: ['1A02'] };
+  const out = applyDelta(base, d);
+  assert.deepEqual(out.map((t) => t.train_id), ['1A01']);
+  assert.equal(out[0].lateness_min, 9);
 });
