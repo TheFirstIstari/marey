@@ -1,9 +1,10 @@
 // tools/build.js — assemble dist/ from src/ + data/, emit a size report, and
 // enforce the §8 payload budgets (fails the build on any overrun).
 // Run: npm run build   (Render's buildCommand; also CI-checkable locally.)
-import { readFileSync, writeFileSync, cpSync, rmSync, mkdirSync, readdirSync, statSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { readFileSync, writeFileSync, cpSync, rmSync, mkdirSync, readdirSync, statSync, renameSync } from 'node:fs';
+import { join, dirname, extname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { hashFile } from '../src/js/hash.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
@@ -45,6 +46,26 @@ function build() {
   for (const f of walk(DATA)) {
     cpSync(join(DATA, f), join(DIST, 'data', f));
   }
+
+  // --- Content-hash assets so /assets/* immutable caching is safe (SPEC §5/§8) ---
+  const assetRename = new Map(); // old dist-relative URL -> hashed URL
+  for (const rel of walk(join(DIST, 'assets'), 'assets')) {
+    const abs = join(DIST, rel);
+    const ext = extname(rel);
+    const dir = dirname(rel);
+    const base = basename(rel, ext);
+    const hash = hashFile(readFileSync(abs));
+    const hashedRel = join(dir, `${base}.${hash}${ext}`);
+    renameSync(abs, join(DIST, hashedRel));
+    assetRename.set(rel, hashedRel);
+  }
+  // Rewrite references in the copied index.html
+  const htmlPath = join(DIST, 'index.html');
+  let html = readFileSync(htmlPath, 'utf8');
+  for (const [oldUrl, newUrl] of assetRename) {
+    html = html.split(oldUrl).join(newUrl);
+  }
+  writeFileSync(htmlPath, html);
 
   // Size report + budget enforcement
   const files = walk(DIST).map((rel) => ({ rel, bytes: statSync(join(DIST, rel)).size })).sort((a, b) => b.bytes - a.bytes);

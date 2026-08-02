@@ -3,13 +3,15 @@
 // produce the exact shapes the smoke test and the §8 budget enforce.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { secOfDayMin, hhmm, linScale, stationY, stationIndex, tripPoints } from '../src/js/marey-math.js';
 import { heatColor, freqTotal, usageSorted, nodeExtents, linePath } from '../src/js/people-math.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const DIST = join(ROOT, 'dist');
+const HASH_RE = /^[a-f0-9]{8}$/;
 
 function readJson(rel) {
   const p = join(ROOT, rel);
@@ -133,6 +135,24 @@ test('people math: usageSorted orders by total descending', () => {
   ]);
   assert.deepEqual(sorted.map((s) => s.crs), ['B', 'A', 'C', 'D'], 'missing total treated as 0');
   assert.deepEqual(usageSorted(null), [], 'null input is an empty list');
+});
+
+test('build hashes assets and index.html references the hashed names', () => {
+  assert.ok(existsSync(join(DIST, 'index.html')), 'dist/index.html missing');
+  const html = readFileSync(join(DIST, 'index.html'), 'utf8');
+  const refs = [...html.matchAll(/(?:src|href)="(assets\/[^"]+)"/g)].map((m) => m[1]);
+  assert.ok(refs.length > 0, 'expected asset references in dist/index.html');
+  for (const ref of refs) {
+    const parts = ref.split('/');
+    const file = parts.at(-1);
+    const base = file.split('.')[0];
+    const hash = file.split('.')[1];
+    assert.match(hash, HASH_RE, `${ref} has no 8-hex content hash`);
+    assert.ok(existsSync(join(DIST, ...parts)), `${ref} missing from dist`);
+    // same basename must not appear un-hashed anywhere in dist/index.html
+    assert.ok(!html.includes(`${base}.js`) && !html.includes(`${base}.css`),
+      `un-hashed reference to ${base} remains`);
+  }
 });
 
 test('people math: fixture-derived values (PAD hourly total, network extents, line path)', () => {

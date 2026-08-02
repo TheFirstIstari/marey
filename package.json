@@ -16,5 +16,8 @@
     "derive": "node tools/etl/derive.js",
     "pipeline": "node tools/etl/collect.js && node tools/etl/derive.js && node tools/smoke-test.js && npm run build"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "saxes": "^6.0.0",
+    "stompit": "^1.0.0"
+  }
 }
