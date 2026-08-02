@@ -9,6 +9,27 @@ export function secOfDayMin(epochSec) {
   return (epochSec % 86400) / 60;
 }
 
+// Return per-line file descriptors for a chosen day from the marey index.
+// index: { days: [{date, lines: [{line, count}]}], lines: [{id, name, color}] }
+// chosenDay: a date string matching one of index.days[].date
+export function pickDayLines(index, chosenDay) {
+  const day = (index && index.days) ? index.days.find((d) => d.date === chosenDay) : null;
+  if (!day) return [];
+  return day.lines.map((l) => ({
+    line: l.line,
+    file: `data/marey-trips-${chosenDay}-${l.line}.json`,
+    tripCount: l.count,
+  }));
+}
+
+// Fetch the per-day/per-line trip file.
+export async function fetchDayTrips(day, line) {
+  const url = `data/marey-trips-${day}-${line}.json`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  return res.json();
+}
+
 // Station index within a line segment (-1 when the CRS is not on the segment).
 export function stationIndex(segStations, crs) {
   return segStations.indexOf(crs);

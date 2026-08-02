@@ -3,7 +3,7 @@
 // no dependencies. Hover scrubs to the nearest trajectory.
 import { ready } from './dataloader.js';
 import { svgEl } from './svg.js';
-import { secOfDayMin, hhmm, linScale, stationY, tripPoints } from './marey-math.js';
+import { secOfDayMin, hhmm, linScale, stationY, tripPoints, pickDayLines, fetchDayTrips } from './marey-math.js';
 
 const W = 880;
 const H = 420;
@@ -114,20 +114,67 @@ function buildPanel(slot, payloads, line) {
   return true;
 }
 
-function render(slot, payloads) {
+async function render(slot, payloads, chosenDay) {
+  const index = payloads.marey;
+  if (!index || !index.days || !index.lines) return;
+
+  const dayEntry = index.days.find((d) => d.date === chosenDay);
+  if (!dayEntry) return;
+
   const lines = (payloads.network && payloads.network.lines) || [];
   let rendered = 0;
+
   for (const line of lines) {
-    if (buildPanel(slot, payloads, line)) rendered++;
+    const lineInfo = dayEntry.lines.find((l) => l.line === line.id);
+    if (!lineInfo || lineInfo.count === 0) continue;
+
+    try {
+      const trips = await fetchDayTrips(chosenDay, line.id);
+      if (!Array.isArray(trips) || trips.length === 0) continue;
+      const panelPayloads = { ...payloads, marey: trips };
+      if (buildPanel(slot, panelPayloads, line)) rendered++;
+    } catch (err) {
+      console.warn(`marey: failed to load ${chosenDay}/${line.id}:`, err.message);
+    }
   }
-  if (!rendered) slot.textContent = 'No trajectory data for any line yet.';
+}
+
+function populateDayPicker(index, chosenDay, onSelect) {
+  const select = document.getElementById('marey-day-select');
+  if (!select) return;
+  select.innerHTML = '';
+
+  for (const day of index.days) {
+    const opt = document.createElement('option');
+    opt.value = day.date;
+    opt.textContent = day.date;
+    if (day.date === chosenDay) opt.selected = true;
+    select.appendChild(opt);
+  }
+
+  select.addEventListener('change', () => onSelect(select.value), { once: false });
 }
 
 async function boot() {
   const slot = document.querySelector('[data-viz-slot="marey"]');
   if (!slot) return;
   try {
-    render(slot, await ready);
+    const payloads = await ready;
+    const index = payloads.marey;
+    const defaultDay = (index && index.days && index.days.length > 0)
+      ? index.days[index.days.length - 1].date
+      : null;
+
+    populateDayPicker(index, defaultDay, async (chosenDay) => {
+      slot.querySelectorAll('.marey-panel').forEach((el) => el.remove());
+      const tip = slot.querySelector('.viz-tip');
+      if (tip) tip.remove();
+      await render(slot, payloads, chosenDay);
+    });
+
+    if (defaultDay) {
+      await render(slot, payloads, defaultDay);
+    }
   } catch (err) {
     slot.textContent = `Could not load data: ${err.message}`;
   }
