@@ -2,7 +2,7 @@
 // and schematic map, all cross-highlighted (hover/click any panel → all react).
 import { ready } from './dataloader.js';
 import { svgEl } from './svg.js';
-import { heatColor, freqTotal, usageSorted, nodeExtents, linePath } from './people-math.js';
+import { heatColor, freqTotal, usageSorted, nodeExtents, linePath, stationDetail } from './people-math.js';
 
 function hcell(cls, text, bg) {
   const el = document.createElement('div');
@@ -74,6 +74,59 @@ function render(slot, payloads) {
   legend.className = 'heat-legend';
   legend.innerHTML = '<span>low</span><i class="heat-ramp"></i><span>high</span>';
 
+  // §10 caption
+  const caption = document.createElement('p');
+  caption.className = 'heat-caption';
+  caption.textContent = 'Arrivals/departures per hour from the timetable — the UK has no public turnstile counts (SPEC §10).';
+
+  // ---- detail panel (shown on click) ----
+  const detail = document.createElement('div');
+  detail.className = 'detail-panel';
+  detail.setAttribute('role', 'dialog');
+  detail.setAttribute('aria-label', 'Station detail');
+  detail.hidden = true;
+  const detailClose = () => { detail.hidden = true; unpin(); };
+  detail.addEventListener('keydown', (e) => { if (e.key === 'Escape') detailClose(); });
+
+  function showDetail(crs) {
+    const d = stationDetail(crs, freq);
+    const name = nameOf(crs);
+    const u = usageById.get(crs);
+    detail.innerHTML = '';
+    const heading = document.createElement('h3');
+    heading.textContent = name;
+    detail.appendChild(heading);
+    if (u) {
+      const usageLine = document.createElement('p');
+      usageLine.className = 'detail-usage';
+      usageLine.textContent = `${fmt(u.entries)} entries · ${fmt(u.exits)} exits · total ${fmt(u.total)}`;
+      detail.appendChild(usageLine);
+    }
+    const avgLine = document.createElement('p');
+    avgLine.className = 'detail-avgs';
+    avgLine.textContent = `Weekday avg: ${d.weekdayAvg} arr+dep/h · Offpeak avg: ${d.offpeakAvg} arr+dep/h`;
+    detail.appendChild(avgLine);
+    const barGrid = document.createElement('div');
+    barGrid.className = 'detail-bars';
+    for (const h of d.hours) {
+      const bar = document.createElement('div');
+      bar.className = 'detail-bar';
+      bar.title = `H${String(h.hour).padStart(2, '0')}: ${h.arrivals} arr, ${h.departures} dep`;
+      const total = h.arrivals + h.departures;
+      bar.style.height = cellMax > 0 ? `${Math.max(2, (total / cellMax) * 100)}%` : '2px';
+      bar.style.background = heatColor(total, cellMax);
+      bar.setAttribute('aria-label', `Hour ${h.hour}: ${h.arrivals} arrivals, ${h.departures} departures`);
+      barGrid.appendChild(bar);
+    }
+    detail.appendChild(barGrid);
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'detail-close';
+    closeBtn.textContent = 'Close';
+    closeBtn.addEventListener('click', detailClose);
+    detail.appendChild(closeBtn);
+    detail.hidden = false;
+  }
+
   // ---- 2. usage table (sorted by total, with mini bars) ----
   const table = document.createElement('table');
   table.className = 'usage-table';
@@ -83,10 +136,16 @@ function render(slot, payloads) {
   for (const s of stations) {
     const tr = document.createElement('tr');
     tr.dataset.crs = s.crs;
+    tr.setAttribute('tabindex', '0');
+    tr.setAttribute('role', 'button');
+    tr.setAttribute('aria-label', `${nameOf(s.crs)} arrivals and departures`);
     tr.innerHTML = `<td>${nameOf(s.crs)}</td><td>${fmt(s.entries)}</td><td>${fmt(s.exits)}</td>` +
       `<td>${fmt(s.total)}</td><td class="bar"><span style="width:${Math.round(((s.total || 0) / maxTotal) * 100)}%"></span></td>`;
     tr.addEventListener('mouseenter', () => hoverSelect(s.crs));
     tr.addEventListener('click', () => pinToggle(s.crs));
+    tr.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pinToggle(s.crs); showDetail(s.crs); }
+    });
     rowEls.push(tr);
     tbody.appendChild(tr);
   }
@@ -110,6 +169,10 @@ function render(slot, payloads) {
   for (const s of net.stops || []) {
     const node = svgEl('circle', { cx: s.x, cy: s.y, r: 6, class: 'map-node' });
     node.dataset.crs = s.crs;
+    node.setAttribute('aria-label', nameOf(s.crs));
+    const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    titleEl.textContent = nameOf(s.crs);
+    node.appendChild(titleEl);
     const u = usageById.get(s.crs);
     node.addEventListener('mouseenter', (e) => {
       hoverSelect(s.crs);
@@ -117,7 +180,7 @@ function render(slot, payloads) {
       showTipAt(e);
     });
     node.addEventListener('mouseleave', hideTip);
-    node.addEventListener('click', () => pinToggle(s.crs));
+    node.addEventListener('click', () => { pinToggle(s.crs); showDetail(s.crs); });
     nodeEls.push(node);
     svg.appendChild(node);
   }
@@ -127,7 +190,7 @@ function render(slot, payloads) {
   panels.className = 'people-panels';
   const hwrap = document.createElement('div');
   hwrap.className = 'people-panel';
-  hwrap.append(heatmap, legend);
+  hwrap.append(heatmap, legend, caption);
   const maprow = document.createElement('div');
   maprow.className = 'people-maprow';
   const twrap = document.createElement('div');
@@ -137,7 +200,7 @@ function render(slot, payloads) {
   mwrap.className = 'people-panel';
   mwrap.appendChild(svg);
   maprow.append(twrap, mwrap);
-  panels.append(hwrap, maprow);
+  panels.append(hwrap, maprow, detail);
   slot.replaceChildren();
   slot.append(panels, tip);
 }

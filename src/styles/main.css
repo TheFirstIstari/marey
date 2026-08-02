@@ -120,3 +120,25 @@ main { max-width: 64rem; margin: 0 auto; padding: 0 1.25rem 3rem; }
 .delay-chart .horizon-area { mix-blend-mode: multiply; }
 .delay-chart .delay-band { opacity: .85; }
 .delay-chart .scrub-line { pointer-events: none; }
+
+/* Detail panel (T5.1) */
+.detail-panel {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+.detail-panel[hidden] { display: none; }
+.detail-panel h3 { margin: 0 0 .5rem; color: var(--accent); font-size: 1rem; }
+.detail-usage, .detail-avgs { margin: 0 0 .25rem; font-size: .85rem; color: var(--muted); }
+.detail-bars { display: flex; gap: 1px; align-items: flex-end; height: 80px; margin: .5rem 0; }
+.detail-bar { flex: 1; min-width: 2px; border-radius: 1px 1px 0 0; }
+.detail-close {
+  background: none; border: 1px solid var(--line); color: var(--ink);
+  padding: .25rem .6rem; border-radius: 4px; cursor: pointer; font-size: .8rem;
+}
+.detail-close:hover { background: rgba(255,180,0,.15); }
+
+.heat-caption { color: var(--muted); font-size: .8rem; margin: .5rem 0 0; }

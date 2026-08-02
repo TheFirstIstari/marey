@@ -38,3 +38,26 @@ export function linePath(seg, stopById) {
   const pts = (seg.stations || []).map((crs) => stopById.get(crs)).filter(Boolean);
   return pts.map((s, i) => `${i ? 'L' : 'M'}${s.x},${s.y}`).join('');
 }
+
+// Per-hour arrivals/departures for one station, plus weekday/offpeak averages.
+export function stationDetail(stationCrs, freq) {
+  const stop = (freq && freq.stops || []).find((s) => s.crs === stationCrs);
+  const hours = Array.from({ length: 24 }, (_, h) => ({ hour: h, arrivals: 0, departures: 0 }));
+  if (stop && stop.times) {
+    for (const t of stop.times) {
+      const h = Math.round((t.time || 0) / 3600);
+      if (h >= 0 && h < 24) {
+        hours[h].arrivals += t.arrivals || 0;
+        hours[h].departures += t.departures || 0;
+      }
+    }
+  }
+  const ab = (stop && stop.averagesByType) || {};
+  const weekday = ab.weekday || { arrivals: 0, departures: 0 };
+  const offpeak = ab.offpeak || { arrivals: 0, departures: 0 };
+  return {
+    hours,
+    weekdayAvg: weekday.arrivals + weekday.departures,
+    offpeakAvg: offpeak.arrivals + offpeak.departures,
+  };
+}
