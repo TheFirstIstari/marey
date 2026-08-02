@@ -8,3 +8,6 @@ raw/               # raw Darwin/NROD downloads (never commit)
 # --- Secrets ---
 .env
 .env.*
+
+# --- Parallel agent worktrees (Execution Model) ---
+.worktrees/
