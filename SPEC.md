@@ -82,6 +82,7 @@ Facts verified against the [live site](https://mbtaviz.github.io/), the [repo](h
 ### 2.3 How the reference is actually built (library usage — audited 2026-08-02)
 
 Source audit of the [repo](https://github.com/mbtaviz/mbtaviz.github.io/) (cloned 2026-08-02) — what the site does under the hood, and what we port.
+  *Port decision updated 2026-08-02 (see port table): the site builds on the scaffold's zero-dependency vanilla ESM + pure math helpers instead of adopting d3 v7.*
 
 **Stack (bower.json):** d3 ~3.4.1, d3-tip ~0.6.4, underscore ~1.6.0, moment ~2.6.0, es6-shim ~0.10.1, jquery ~2.1.0, bootstrap ~3.1.1 (CSS-only, compiled from Less). **No bundler, no minification, no build step** — plain scripts loaded in order at the end of `<body>`: es6-shim → underscore → moment → d3 → jquery → horizon.js (a script-local D3 v3 plugin) → d3-tip → `common.js` → `files.js` → `dataloader.js` → `fixed.js` → `header.js` → one IIFE per section. `common.js` defines a global `VIZ` namespace with `appendOnce`/`onOnce`/`moveToFront` helpers; `dataloader.js` wraps d3.json v3 with byte-aggregated progress events; `files.js` is build-generated (`{file: byteSize}` + `{file: shortHash}`) and used as `?nocache=hash` cache-busting.
 
@@ -103,7 +104,7 @@ Source audit of the [repo](https://github.com/mbtaviz/mbtaviz.github.io/) (clone
 
 | Keep (proven pattern) | Replace (dead weight / fragile) |
 |---|---|
-| SVG-first rendering; keyed D3 joins | d3 v3 → **d3 v7** (ES modules; `d3.scaleTime`/`d3.area`/`d3.drag`) |
+| SVG-first rendering; keyed joins (native `selectAll`-style helpers, pure math modules) | d3 v3 → **zero-dependency vanilla ESM** — decided 2026-08-02: the scaffold's Marey/People already render natively (~40 KB JS total vs ≥ 80–120 KB tree-shaken d3); §5/§8/§9 win. d3 v7 stays the documented fallback for a full-network scale-out (M8) |
 | Event delegation + class-based hover | jQuery, underscore, moment, es6-shim → native `fetch`/`Promise.all`/`Intl` |
 | Parallel per-section loads (barrier at page load) | Bootstrap/Less → plain CSS |
 | Content-hash cache-busting (`?nocache=hash`) | IIFE-per-section → ES modules |
