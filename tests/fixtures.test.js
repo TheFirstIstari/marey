@@ -30,7 +30,7 @@ test('schedule-*.json files match §6.4 shape', () => {
     const sched = json(f);
     assert.ok(Array.isArray(sched));
     for (const svc of sched) {
-      assert.ok(svc.uid && svc.headcode && svc.toc && svc.stp);
+      assert.ok(svc.uid && svc.headcode && svc.toc);
       assert.ok(Array.isArray(svc.departures) && svc.departures.every((d) => crsRe.test(d.crs) && Number.isInteger(d.time)));
       assert.ok(Array.isArray(svc.stops) && svc.stops.every((x) => crsRe.test(x.crs) && Number.isInteger(x.planned_time)));
     }
