@@ -1,1 +1,1 @@
-{"days":[{"date":"2025-04-01","lines":[{"line":"gwml","count":1},{"line":"c2c","count":1},{"line":"ga","count":1},{"line":"xc","count":1}]}],"lines":[{"id":"c2c","name":"c2c","color":"#1e56a0"},{"id":"ga","name":"Greater Anglia","color":"#7a003c"},{"id":"gn","name":"Great Northern (selected)","color":"#00a8e1"},{"id":"gwml","name":"Great Western Main Line","color":"#0a7d33"},{"id":"xc","name":"CrossCountry (selected)","color":"#a4a4a4"}]}
+{"date":"2025-04-01","lines":["gwml","c2c","ga","xc"]}
