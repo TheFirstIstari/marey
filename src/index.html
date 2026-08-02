@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UK Rail Viz</title>
+  <meta name="description" content="Visualising the UK rail network: train trajectories, station traffic, congestion and delay, commutes, and live train positions — built from Network Rail Darwin data.">
+  <link rel="stylesheet" href="assets/styles/main.css">
+  <script type="module" src="assets/js/marey.js"></script>
+  <script type="module" src="assets/js/people.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <h1>UK Rail Viz</h1>
+    <p class="tagline">An MBTA-Viz-style look at Britain's railways, powered by Network Rail Darwin data (spec: <code>SPEC.md</code>).</p>
+    <p id="data-status" class="data-status" role="status">Loading data…</p>
+  </header>
+
+  <main>
+    <section id="trains" class="viz-section">
+      <h2>The Trains</h2>
+      <p class="viz-note">Marey diagram of train trajectories across the corridor.</p>
+      <div class="viz-slot" data-viz-slot="marey"></div>
+    </section>
+
+    <section id="people" class="viz-section">
+      <h2>The People</h2>
+      <p class="viz-note">Station traffic: hourly boardings/alightings heatmaps, usage table, and network map.</p>
+      <div class="viz-slot" data-viz-slot="usage"></div>
+    </section>
+
+    <section id="delay" class="viz-section">
+      <h2>Congestion &amp; Delay</h2>
+      <p class="viz-note">Where and when the network runs late — delay horizon charts.</p>
+      <div class="viz-slot" data-viz-slot="delay"></div>
+    </section>
+
+    <section id="commute" class="viz-section">
+      <h2>Your Commute</h2>
+      <p class="viz-note">Point-to-point journey time percentiles for your usual trip.</p>
+      <div class="viz-slot" data-viz-slot="commute"></div>
+    </section>
+
+    <section id="live" class="viz-section">
+      <h2>Live Trains</h2>
+      <p class="viz-note">Current train positions across the network, refreshed from Darwin.</p>
+      <div class="viz-slot" data-viz-slot="live"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Data: Network Rail Darwin (via Rail Data Marketplace) and ORR station usage. Built as a static site — no server.</p>
+  </footer>
+</body>
+</html>

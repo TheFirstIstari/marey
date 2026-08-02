@@ -1,0 +1,20 @@
+{
+  "name": "uk-rail-viz",
+  "version": "0.1.0",
+  "private": true,
+  "description": "UK Rail Viz — MBTA Viz-style dashboard for the UK rail network, powered by Network Rail Darwin data. See SPEC.md.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node tools/build.js",
+    "fixtures": "node tools/fixtures.js",
+    "smoke": "node tools/smoke-test.js",
+    "test": "node tools/fixtures.js && node tools/smoke-test.js && node --test tests/*.test.js",
+    "collect": "node tools/etl/collect.js",
+    "derive": "node tools/etl/derive.js",
+    "pipeline": "node tools/etl/collect.js && node tools/etl/derive.js && node tools/smoke-test.js && npm run build"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,12 @@
+{
+  "status": "skipped",
+  "reason": "credentials not configured",
+  "missingEnvVars": [
+    "s3Key",
+    "s3Secret",
+    "nrodUser",
+    "nrodPass"
+  ],
+  "next": "Set DARWIN_S3_KEY_ID, DARWIN_S3_SECRET, NROD_USER, NROD_PASS (Render Dashboard → Environment, or GitHub repo secrets for the Actions pipeline) and re-run. Until then the pipeline uses data/ fixtures.",
+  "createdAt": "2026-08-02T01:04:57.963Z"
+}

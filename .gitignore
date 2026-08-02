@@ -1,0 +1,10 @@
+# --- Generated / local ---
+node_modules/
+dist/
+raw/               # raw Darwin/NROD downloads (never commit)
+*.log
+.DS_Store
+
+# --- Secrets ---
+.env
+.env.*

@@ -1,0 +1,20 @@
+{
+  "comment": "Payload budgets (SPEC.md §8). Sizes are UNCOMPRESSED bytes of the files in dist/; Render's edge serves them brotli/gzip-compressed. Enforced by tools/build.js — build fails if any limit is exceeded.",
+  "totalMaxBytes": 15000000,
+  "firstVisitTargetBytes": 1500000,
+  "artifacts": [
+    { "match": "index.html", "maxBytes": 50000, "note": "page shell" },
+    { "match": "assets/*.js", "maxBytes": 200000, "note": "all JS (hashed/immutable)" },
+    { "match": "assets/*.css", "maxBytes": 50000, "note": "CSS" },
+    { "match": "data/network.json", "maxBytes": 200000, "note": "topology + schematic coords" },
+    { "match": "data/schedule-*.json", "maxBytes": 150000, "note": "planned schedules per corridor" },
+    { "match": "data/marey-trips.json", "maxBytes": 400000, "note": "The Trains (actual trajectories)" },
+    { "match": "data/station-frequency.json", "maxBytes": 350000, "note": "The People heatmap (proxy)" },
+    { "match": "data/station-usage.json", "maxBytes": 150000, "note": "The People table/map sizing (ORR)" },
+    { "match": "data/delay.json", "maxBytes": 400000, "note": "Congestion & Delay buckets" },
+    { "match": "data/average-actual-delays.json", "maxBytes": 20000, "note": "speed-ratio baseline" },
+    { "match": "data/commute-*.json", "maxBytes": 150000, "note": "Your Commute per-origin rollups" },
+    { "match": "data/live.json", "maxBytes": 150000, "note": "live overlay snapshot" },
+    { "match": "data/toc.json", "maxBytes": 10000, "note": "TOC legend" }
+  ]
+}
