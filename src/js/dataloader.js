@@ -34,8 +34,12 @@ export const ready = (async () => {
     else console.warn('dataloader:', r.reason?.message ?? r.reason);
   }
   const ok = results.filter((r) => r.status === 'fulfilled').length;
-  const el = document.getElementById('data-status');
-  if (el) { el.textContent = `✓ ${ok}/${all.length} payloads loaded`; el.setAttribute('aria-live', 'polite'); }
-  window.UKRailViz = { data: out, loadedAt: Date.now() };
+  if (typeof document !== 'undefined') {
+    const el = document.getElementById('data-status');
+    if (el) { el.textContent = `✓ ${ok}/${all.length} payloads loaded`; el.setAttribute('aria-live', 'polite'); }
+  }
+  if (typeof window !== 'undefined') {
+    window.UKRailViz = { data: out, loadedAt: Date.now() };
+  }
   return out;
 })();
