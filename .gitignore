@@ -4,6 +4,7 @@ dist/
 raw/               # raw Darwin/NROD downloads (never commit)
 *.log
 .DS_Store
+.superpowers/     # SDD workspace and ledger (never commit)
 
 # --- Secrets ---
 .env

@@ -295,8 +295,8 @@ export async function derivePlanned({ cfg, stations, rawDir }) {
       stp: s.stp,
       origin: s.origin,
       destination: s.destination,
-      departures: s.calling.map((c) => ({ crs: c.crs, time: c.ptd })).filter((d) => d.time != null),
-      stops: s.calling.map((c) => ({ crs: c.crs, planned_time: c.pta || c.ptd })).filter((st) => st.planned_time != null),
+      departures: s.calling.map((c) => ({ crs: c.crs, time: timeToMin(c.ptd) })).filter((d) => d.time != null),
+      stops: s.calling.map((c) => ({ crs: c.crs, planned_time: timeToMin(c.pta || c.ptd) })).filter((st) => st.planned_time != null),
     }));
     scheduleData.sort((a, b) => a.uid.localeCompare(b.uid));
     const relPath = `data/schedule-${line.id}.json`;
@@ -496,6 +496,12 @@ export async function deriveActuals(trips, hspClient, options = {}) {
   }
 
   return { commute, delay: buildDelayBuckets(trips, { days: 7, windowDays }) };
+}
+
+function timeToMin(timeStr) {
+  if (timeStr == null) return null;
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + (m || 0);
 }
 
 function percentile(sorted, p) {
