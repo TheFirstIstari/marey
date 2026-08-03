@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { pickHighestVersion, listS3Keys, statusShape } from '../tools/etl/collect.js';
 import { parseTimetable, parseRef } from '../tools/etl/xml.js';
 import { loadPoc } from '../tools/etl/corridors.js';
@@ -8,6 +10,9 @@ import { derivePlanned } from '../tools/etl/derive.js';
 import { deriveActuals, buildDelayBuckets } from '../tools/etl/derive.js';
 
 const TS = '20260802020500';
+
+// Derived outputs go to a throwaway dir so tests never touch data/
+const TMP_OUT = mkdtempSync(join(tmpdir(), 'marey-etl-'));
 
 test('pickHighestVersion selects the day highest v{n}', () => {
   const keys = [
@@ -51,7 +56,7 @@ test('timetable streams and filters to the PoC station set', async () => {
 
 test('network.json is self-consistent', async () => {
   const cfg = await loadPoc('config/poc.json');
-  const net = await derivePlanned({ cfg, stations: [], rawDir: 'raw' });
+  const net = await derivePlanned({ cfg, stations: [], rawDir: 'raw', outDir: TMP_OUT });
   for (const seg of net.segments) {
     assert.ok(seg.line && seg.from_crs && seg.to_crs, `segment has line/from_crs/to_crs`);
     assert.ok(seg.stations.length >= 2, `segment has >=2 stations`);
@@ -164,6 +169,7 @@ test('commute rollups key by destination and expose p10/p50/p90', async () => {
     destinations: ['BRI', 'NRW'],
     date: '2025-04-01',
     windowDays: 7,
+    outDir: TMP_OUT,
   });
 
   assert.ok(result, 'deriveActuals returns a result');
@@ -184,3 +190,5 @@ test('commute rollups key by destination and expose p10/p50/p90', async () => {
     }
   }
 });
+
+test.after(() => rmSync(TMP_OUT, { recursive: true, force: true }));

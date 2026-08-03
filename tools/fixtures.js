@@ -1,14 +1,17 @@
 // tools/fixtures.js — generate shape-correct placeholder data/ artifacts so the
 // site builds, deploys and passes smoke tests before real Darwin data flows.
 // Real data overwrites these via tools/etl/derive.js once credentials are wired.
-// Corridor used in fixtures: GWML (Paddington → Bristol Temple Meads) — spec D1 default.
-import { writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
+// Corridor used in fixtures: all PoC lines from config/poc.json (eastern region).
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = join(ROOT, 'data');
 mkdirSync(DATA, { recursive: true });
+
+// Load PoC config so fixtures match the eastern-region line set.
+const poc = JSON.parse(readFileSync(join(ROOT, 'config/poc.json'), 'utf8'));
 
 // Delete known artifact list first so re-runs are deterministic (no stale files).
 const KNOWN_ARTIFACTS = [
@@ -34,145 +37,223 @@ function writeJson(name, obj) {
   writeFileSync(join(DATA, name), JSON.stringify(obj));
 }
 
-// ── stations.json ──────────────────────────────────────────────────────────
-const STATIONS = [
-  { crs: 'PAD', name: 'London Paddington', lat: 51.5168, lon: -0.1270, tiploc: 'PADTON', stanox: '9200PAD', usage: 8000000 },
-  { crs: 'RDG', name: 'Reading', lat: 51.4593, lon: -0.9733, tiploc: 'RDG', stanox: '9200RDG', usage: 6500000 },
-  { crs: 'DID', name: 'Didcot Parkway', lat: 51.6123, lon: -1.1447, tiploc: 'DIDCO', stanox: '9200DID', usage: 5000000 },
-  { crs: 'SWI', name: 'Swindon', lat: 51.5612, lon: -1.7923, tiploc: 'SWIND', stanox: '9200SWI', usage: 3500000 },
-  { crs: 'BTH', name: 'Bath Spa', lat: 51.3775, lon: -2.3569, tiploc: 'BATH', stanox: '9200BTH', usage: 2000000 },
-  { crs: 'BRI', name: 'Bristol Temple Meads', lat: 51.4497, lon: -2.5819, tiploc: 'BRIST', stanox: '9200BRI', usage: 500000 },
-];
+// ── stations.json ──────────────────────────────────────────────────
+// Generate one placeholder station per CRS code in the PoC station set.
+const STATIONS = poc.stationSet.crs.map((crs) => ({
+  crs,
+  name: crs,
+  lat: 0,
+  lon: 0,
+  tiploc: crs,
+  stanox: crs,
+  usage: 0,
+}));
 writeJson('stations.json', STATIONS);
 
-// ── network.json ───────────────────────────────────────────────────────────
-const CORRIDOR = {
-  line: 'gwml', name: 'Great Western Main Line', color: '#0a7d33',
-  stops: STATIONS,
-};
+// ── network.json ───────────────────────────────────────────────────
+// Build a network with all PoC lines, each containing all PoC stations.
+// Positions are schematic (non-geographic): stops are laid out evenly
+// along the corridor in x, one vertical band per line in y so the Marey
+// chart / side map can distinguish services. Top-level stops use a
+// single reference band. Shape matches tools/etl/derive.js output:
+// lines[].stops[].{crs,x,y,name} and stops[].{crs,x,y,name}.
+const stopNames = new Map(STATIONS.map((s) => [s.crs, s.name]));
+const N = STATIONS.length;
+
+// Per-line positions: x = order index along the line (the Marey chart
+// spaces stations evenly by order, exactly like the exemplar's
+// marey-header.json), y = one band per line so services can be told apart.
+function orderPos(i, bandY) {
+  return { x: i, y: Math.round((bandY + Math.sin(i / 25) * 15) * 100) / 100 };
+}
+
+// Top-level (map) positions: a schematic corridor S-curve with a usable
+// aspect ratio for the map glyphs (~2:1, not a flat strip).
+function corridorPos(i) {
+  const x = N > 1 ? (i * 900) / (N - 1) : 0;
+  const y = 300 + Math.sin(i / 10) * 150 + (i / (N - 1)) * 200;
+  return { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 };
+}
+
+const lines = [];
+const allSegments = [];
+poc.lines.forEach((lineDef, lineIndex) => {
+  const bandY = 60 + lineIndex * 55;
+  const lineStops = STATIONS.map((s, i) => ({
+    crs: s.crs,
+    name: s.name,
+    ...orderPos(i, bandY),
+  }));
+  const lineSegments = [];
+  for (let i = 0; i < lineStops.length - 1; i++) {
+    lineSegments.push({
+      line: lineDef.id,
+      from_crs: lineStops[i].crs,
+      to_crs: lineStops[i + 1].crs,
+      stations: [lineStops[i].crs, lineStops[i + 1].crs],
+    });
+    allSegments.push(lineSegments[lineSegments.length - 1]);
+  }
+  lines.push({
+    id: lineDef.id,
+    name: lineDef.name,
+    color: lineDef.color,
+    stops: lineStops,
+    segments: lineSegments,
+  });
+});
+
+const allStops = STATIONS.map((s, i) => ({
+  crs: s.crs,
+  name: s.name,
+  ...corridorPos(i),
+}));
+
 const network = {
-  lines: [{ id: CORRIDOR.line, name: CORRIDOR.name, color: CORRIDOR.color }],
-  stops: CORRIDOR.stops.map((s, i) => ({
-    crs: s.crs, name: s.name,
-    x: +(30 + (i * 16) + (-s.lon - 0.12) * 10).toFixed(1),
-    y: +(30 + (51.5168 - s.lat) * 150).toFixed(1),
-  })),
-  segments: [{ line: CORRIDOR.line, stations: CORRIDOR.stops.map((s) => s.crs) }],
+  lines,
+  stops: allStops,
+  segments: allSegments,
 };
 writeJson('network.json', network);
 
-// ── schedule-gwml.json ─────────────────────────────────────────────────────
-// §6.4 shape: each service {uid, headcode, toc, stp, origin, destination, departures:[{crs, time}], stops:[{crs, planned_time}]}
-// times are integer minutes-since-midnight.
+// ── schedules (one per PoC line) ───────────────────────────────────
 function mins(h, m) { return h * 60 + m; }
-const schedule = [
-  { uid: '1A01', headcode: '1A01', toc: 'GW', stp: 'P', origin: 'PAD', destination: 'BRI',
-    departures: [{ crs: 'PAD', time: mins(6, 0) }],
-    stops: [
-      { crs: 'PAD', planned_time: mins(6, 0) },
-      { crs: 'RDG', planned_time: mins(6, 48) },
-      { crs: 'DID', planned_time: mins(6, 72) },
-      { crs: 'SWI', planned_time: mins(6, 108) },
-      { crs: 'BTH', planned_time: mins(6, 150) },
-      { crs: 'BRI', planned_time: mins(6, 180) },
-    ]},
-  { uid: '1A01', headcode: '1A02', toc: 'GW', stp: 'P', origin: 'PAD', destination: 'BRI',
-    departures: [{ crs: 'PAD', time: mins(7, 0) }],
-    stops: [
-      { crs: 'PAD', planned_time: mins(7, 0) },
-      { crs: 'RDG', planned_time: mins(7, 48) },
-      { crs: 'DID', planned_time: mins(7, 72) },
-      { crs: 'SWI', planned_time: mins(7, 108) },
-      { crs: 'BTH', planned_time: mins(7, 150) },
-      { crs: 'BRI', planned_time: mins(7, 180) },
-    ]},
-  { uid: '1A01', headcode: '1A03', toc: 'GW', stp: 'P', origin: 'PAD', destination: 'BRI',
-    departures: [{ crs: 'PAD', time: mins(8, 0) }],
-    stops: [
-      { crs: 'PAD', planned_time: mins(8, 0) },
-      { crs: 'RDG', planned_time: mins(8, 48) },
-      { crs: 'DID', planned_time: mins(8, 72) },
-      { crs: 'SWI', planned_time: mins(8, 108) },
-      { crs: 'BTH', planned_time: mins(8, 150) },
-      { crs: 'BRI', planned_time: mins(8, 180) },
-    ]},
-];
-writeJson('schedule-gwml.json', schedule);
 
-// ── marey trips (split per day+line) ──────────────────────────────────────
+const allSchedules = {};
+for (const lineDef of poc.lines) {
+  const schedule = [];
+  const terminals = lineDef.terminals || [];
+  const origin = terminals[0] || STATIONS[0].crs;
+  const destination = terminals.length > 1 ? terminals[1] : STATIONS[STATIONS.length - 1].crs;
+
+  for (let i = 1; i <= 3; i++) {
+    schedule.push({
+      uid: `${lineDef.id.toUpperCase()}-${String(i).padStart(3, '0')}`,
+      headcode: `${lineDef.id.toUpperCase()}-${String(i).padStart(3, '0')}`,
+      toc: lineDef.operators[0] || 'XX',
+      stp: 'P',
+      origin,
+      destination,
+      departures: [{ crs: origin, time: mins(6, 0) + i * 30 }],
+      stops: allStops.map((s, idx) => ({
+        crs: s.crs,
+        planned_time: mins(6, 0) + i * 30 + idx * 5,
+      })),
+    });
+  }
+  allSchedules[lineDef.id] = schedule;
+  writeJson(`schedule-${lineDef.id}.json`, schedule);
+}
+
+// ── marey trips (split per day+line) ──────────────────────────────
 const TRIP_ANCHOR_EPOCH = 1743494400; // 2025-04-01T08:00Z
-const dayTrips = schedule.map((s) => ({
-  service: s.uid,
-  line: s.line || CORRIDOR.line,
-  begin: TRIP_ANCHOR_EPOCH + 30,
-  end: TRIP_ANCHOR_EPOCH + 1800 + 90,
-  stops: s.stops.map((st) => ({ stop: st.crs, time: TRIP_ANCHOR_EPOCH + 40 + (st.planned_time - mins(6, 0)) * 60 + (st.crs === 'BRI' ? 90 : 0) })),
-}));
-writeJson('marey-trips-2025-04-01-gwml.json', dayTrips);
+
+for (const lineDef of poc.lines) {
+  const schedule = allSchedules[lineDef.id] || [];
+  const dayTrips = schedule.map((s) => ({
+    service: s.uid,
+    line: lineDef.id,
+    begin: TRIP_ANCHOR_EPOCH + 30,
+    end: TRIP_ANCHOR_EPOCH + 1800 + 90,
+    stops: s.stops.map((st) => ({
+      stop: st.crs,
+      time: TRIP_ANCHOR_EPOCH + 40 + (st.planned_time - mins(6, 0)) * 60,
+    })),
+  }));
+  writeJson(`marey-trips-2025-04-01-${lineDef.id}.json`, dayTrips);
+}
 
 const mareyIndex = {
-  days: [{ date: '2025-04-01', lines: [{ line: 'gwml', count: dayTrips.length }] }],
-  lines: [{ id: 'gwml', name: 'Great Western Main Line', color: '#0a7d33' }],
+  days: [{
+    date: '2025-04-01',
+    lines: poc.lines.map((l) => ({ line: l.id, count: (allSchedules[l.id] || []).length })),
+  }],
+  lines: poc.lines.map((l) => ({ id: l.id, name: l.name, color: l.color })),
 };
 writeJson('marey-index.json', mareyIndex);
 
-// ── live-delta.json ────────────────────────────────────────────────────────
+// ── live-delta.json ────────────────────────────────────────────────
 writeJson('live-delta.json', { refreshed_at: 0, changed: [], removed: [] });
 
-// ── station-frequency.json ────────────────────────────────────────────────
+// ── station-frequency.json ─────────────────────────────────────────
 const HOUR = 3600;
 writeJson('station-frequency.json', {
-  stops: CORRIDOR.stops.map((s) => ({
+  stops: STATIONS.map((s) => ({
     crs: s.crs,
     times: Array.from({ length: 24 }, (_, h) => ({ time: h * HOUR, arrivals: h >= 6 && h <= 9 ? 4 : 1, departures: h >= 6 && h <= 9 ? 4 : 1 })),
-    averagesByType: { weekday: { arrivals: 2, departures: 2 }, offpeak: { arrivals: 1, departures: 1 } },
-  })),
+    averagesByType: { weekday: { arrivals: 2, departures: 2 }, offpeak: { arrivals: 1, departures: 1 } } })),
 });
 
-// ── station-usage.json ────────────────────────────────────────────────────
+// ── station-usage.json ─────────────────────────────────────────────
+// Entries/exits decay along the station list but never go negative.
 writeJson('station-usage.json', {
-  stations: CORRIDOR.stops.map((s, i) => ({ crs: s.crs, name: s.name, entries: 8000000 - i * 1500000, exits: 7800000 - i * 1500000, interchange: i * 200000, total: 15800000 - i * 3000000 })),
-  max: 15800000, min: 800000, mean: 7900000,
+  stations: STATIONS.map((s, i) => {
+    const entries = Math.max(100, 8000000 - i * 39000);
+    const exits = Math.max(50, 7800000 - i * 39000);
+    return { crs: s.crs, name: s.name, entries, exits, interchange: i * 200000, total: entries + exits };
+  }),
+  max: 8000000, min: 100, mean: 3980000,
 });
 
-// ── delay.json ────────────────────────────────────────────────────────────
+// ── delay.json ─────────────────────────────────────────────────────
 const buckets = [];
 for (let day = 0; day < 7; day++) {
   for (let b = 0; b < 96; b++) {
     const secOfDay = b * 900;
     const busy = (secOfDay >= 6 * 3600 && secOfDay <= 9 * 3600) || (secOfDay >= 16 * 3600 && secOfDay <= 19 * 3600);
+    const lineDelays = {};
+    const corridorKey = `${STATIONS[0].crs}|${STATIONS[STATIONS.length - 1].crs}`;
+    for (const lineDef of poc.lines) {
+      lineDelays[lineDef.id] = { delay_actual: { [corridorKey]: busy ? 240 : 60 }, ins_total: busy ? 5.3 : 0 };
+    }
     buckets.push({
       day, secOfDay, time: 1743548400000 + day * 86400000 + secOfDay * 1000,
-      ins: busy ? { PAD: 3.2, BRI: 2.1 } : {}, outs: busy ? { PAD: 2.9, BRI: 2.4 } : {},
+      ins: busy ? { [STATIONS[0].crs]: 3.2, [STATIONS[STATIONS.length - 1].crs]: 2.1 } : {},
+      outs: busy ? { [STATIONS[0].crs]: 2.9, [STATIONS[STATIONS.length - 1].crs]: 2.4 } : {},
       ins_total: busy ? 5.3 : 0,
-      lines: [{ line: CORRIDOR.line, delay_actual: { 'PAD|BRI': busy ? 240 : 60 }, ins_total: busy ? 5.3 : 0 }],
+      lines: Object.values(lineDelays),
     });
   }
 }
 writeJson('delay.json', buckets);
 
-writeJson('average-actual-delays.json', {
-  'PAD|RDG': 1140, 'RDG|DID': 480, 'DID|SWI': 360, 'SWI|BTH': 540, 'BTH|BRI': 480, 'PAD|BRI': 3000,
-});
+// Average actual inter-station travel times, one entry per consecutive
+// station pair in the corridor plus the full-corridor pair (the key the
+// delay buckets use).  Shape matches the exemplar: {from|to: seconds}.
+const avgDelays = {};
+for (let i = 0; i < STATIONS.length - 1; i++) {
+  avgDelays[`${STATIONS[i].crs}|${STATIONS[i + 1].crs}`] = 240 + (i % 6) * 60;
+}
+avgDelays[`${STATIONS[0].crs}|${STATIONS[STATIONS.length - 1].crs}`] = 3000;
+writeJson('average-actual-delays.json', avgDelays);
 
-// ── commute-PAD.json ──────────────────────────────────────────────────────
-writeJson('commute-PAD.json', {
-  BRI: {
-    result: Array.from({ length: 18 }, (_, h) => [h + 5.5, [85, 97, 112], [2, 4, 9]]),
-    actuals: [[6.5, 98, 3], [7.5, 105, 6], [8.5, 110, 8]],
-  },
-});
+// ── commute-<origin>.json (one per PoC commute origin) ─────────────
+// Placeholder weekday rollups for a fixed set of eastern destinations;
+// shape matches the exemplar's per-origin commute file ({dest: {result,
+// actuals}}).  Destinations are real eastern stations, so the scatterplot
+// renders for any pair picked on the map.
+const COMMUTE_DESTS = ['SOS', 'CBG', 'ELY', 'IPS', 'NRW'];
+for (const origin of poc.commuteOrigins) {
+  const rollup = {};
+  COMMUTE_DESTS.forEach((dest, k) => {
+    rollup[dest] = {
+      result: Array.from({ length: 18 }, (_, h) => [h + 5.5, [85 + k * 6, 97 + k * 6, 112 + k * 6], [2, 4, 9]]),
+      actuals: [[6.5, 98 + k * 6, 3], [7.5, 105 + k * 6, 6], [8.5, 110 + k * 6, 8]],
+    };
+  });
+  writeJson(`commute-${origin}.json`, rollup);
+}
 
-// ── live.json ─────────────────────────────────────────────────────────────
+// ── live.json ──────────────────────────────────────────────────────
 writeJson('live.json', {
   refreshed_at: new Date().toISOString(),
   trains: [
-    { train_id: '515G531I24', headcode: '1A05', toc: 'GW', crs: 'RDG', lat: 51.4560, lon: -0.9721, lateness_min: 3, status: 'ON TIME', platform: '9', origin: 'PAD', destination: 'BRI' },
-    { train_id: '515G532I31', headcode: '1C22', toc: 'GW', crs: 'SWI', lat: 51.5650, lon: -1.7840, lateness_min: 11, status: 'LATE', platform: '1', origin: 'PAD', destination: 'BRI' },
+    { train_id: '515G531I24', headcode: '1A05', toc: poc.lines[0].operators[0], crs: STATIONS[1].crs, lat: 51.5080, lon: -0.0500, lateness_min: 3, status: 'ON TIME', platform: '9', origin: STATIONS[0].crs, destination: STATIONS[STATIONS.length - 1].crs },
+    { train_id: '515G532I31', headcode: '1C22', toc: poc.lines[0].operators[0], crs: STATIONS[3].crs, lat: 51.5410, lon: 0.4300, lateness_min: 11, status: 'LATE', platform: '1', origin: STATIONS[0].crs, destination: STATIONS[STATIONS.length - 1].crs },
   ],
 });
 
-// ── toc.json ──────────────────────────────────────────────────────────────
-writeJson('toc.json', [{ toc: 'GW', name: 'Great Western Railway', colour: '#0a7d33' }]);
+// ── toc.json ───────────────────────────────────────────────────────
+writeJson('toc.json', poc.lines.map((l) => ({ toc: l.operators[0] || 'XX', name: l.name, colour: l.color })));
 
 console.log('fixtures written to data/');

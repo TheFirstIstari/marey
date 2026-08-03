@@ -6,7 +6,7 @@ import { readFileSync, existsSync, readdirSync, mkdirSync, statSync, writeFileSy
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseRef, parseTimetable } from './xml.js';
-import { writeJson, assertBudget } from './serialize.js';
+import { assertBudget } from './serialize.js';
 import { bstCorrectionMs } from './normalize.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -14,6 +14,15 @@ const ROOT = join(__dirname, '../..');
 
 const hasRawTimetable = existsSync(join(ROOT, 'raw', 'timetable'));
 const hasRawMovements = existsSync(join(ROOT, 'raw', 'movements'));
+
+// Artifact writer.  Default target is data/; tests pass a temp dir so they
+// never clobber the real artifacts (see tests/etl.test.js).
+function outWriter(outDir) {
+  return function (name, obj) {
+    const rel = name.replace(/^data\//, '');
+    writeFileSync(join(outDir, rel), JSON.stringify(obj) + '\n', 'utf8');
+  };
+}
 
 // --- Helper functions for planned derivation ---
 
@@ -193,13 +202,14 @@ function computeToc(refToc, poc) {
 // --- Public: derive planned artifacts ---
 
 /**
- * @param {{ cfg: object, stations: Array, rawDir: string }} params
+ * @param {{ cfg: object, stations: Array, rawDir: string, outDir?: string }} params
  * @returns { Promise<{ lines: Array, stops: Array, segments: Array }> }
  */
-export async function derivePlanned({ cfg, stations, rawDir }) {
+export async function derivePlanned({ cfg, stations, rawDir, outDir = join(ROOT, 'data') }) {
   const { refFile, ttFile } = findRawFiles(rawDir);
   if (!refFile) throw new Error(`derivePlanned: no ref file found in ${rawDir}`);
   if (!ttFile) throw new Error(`derivePlanned: no timetable file found in ${rawDir}`);
+  const write = outWriter(outDir);
 
   const ref = await parseRef(refFile);
   const schedules = [];
@@ -290,7 +300,7 @@ export async function derivePlanned({ cfg, stations, rawDir }) {
 
   const networkRaw = JSON.stringify(network);
   assertBudget('data/network.json', networkRaw.length);
-  writeJson('data/network.json', network);
+  write('data/network.json', network);
 
   for (const line of cfg.lines) {
     const lineSchedules = allSchedulesByLine[line.id] || [];
@@ -309,23 +319,23 @@ export async function derivePlanned({ cfg, stations, rawDir }) {
     const relPath = `data/schedule-${line.id}.json`;
     const raw = JSON.stringify(scheduleData);
     assertBudget(relPath, raw.length);
-    writeJson(relPath, scheduleData);
+    write(relPath, scheduleData);
   }
 
   const frequency = computeFrequency(schedules, cfg);
   const freqRaw = JSON.stringify(frequency);
   assertBudget('data/station-frequency.json', freqRaw.length);
-  writeJson('data/station-frequency.json', frequency);
+  write('data/station-frequency.json', frequency);
 
   const usage = computeStationUsage(stationCoords);
   const usageRaw = JSON.stringify(usage);
   assertBudget('data/station-usage.json', usageRaw.length);
-  writeJson('data/station-usage.json', usage);
+  write('data/station-usage.json', usage);
 
   const toc = computeToc(ref.toc, cfg);
   const tocRaw = JSON.stringify(toc);
   assertBudget('data/toc.json', tocRaw.length);
-  writeJson('data/toc.json', toc);
+  write('data/toc.json', toc);
 
   return network;
 }
@@ -405,7 +415,9 @@ export async function deriveActuals(trips, hspClient, options = {}) {
     destinations = [],
     date = new Date().toISOString().slice(0, 10),
     windowDays = 7,
+    outDir = join(ROOT, 'data'),
   } = options;
+  const write = outWriter(outDir);
 
   const commute = [];
 
@@ -489,17 +501,20 @@ export async function deriveActuals(trips, hspClient, options = {}) {
     }
   }
 
-  writeJson(`data/marey-index.json`, { date, lines: [...new Set(trips.map((t) => t.line))] });
+  write(`data/marey-index.json`, {
+    days: [{ date, lines: [...new Set(trips.map((t) => t.line))].map((line) => ({ line, count: trips.filter((t) => t.line === line).length })) }],
+    lines: (options.cfg || { lines: [] }).lines.map((l) => ({ id: l.id, name: l.name, color: l.color })),
+  });
 
   for (const trip of trips) {
     const key = `data/marey-trips-${date}-${trip.line}.json`;
-    writeJson(key, [trip]);
+    write(key, [trip]);
   }
 
-  writeJson('data/delay.json', buildDelayBuckets(trips, { days: 7, windowDays }));
+  write('data/delay.json', buildDelayBuckets(trips, { days: 7, windowDays }));
 
   for (const c of commute) {
-    writeJson(`data/commute-${c.origin}.json`, c.destinations);
+    write(`data/commute-${c.origin}.json`, c.destinations);
   }
 
   return { commute, delay: buildDelayBuckets(trips, { days: 7, windowDays }) };

@@ -5,7 +5,7 @@
   "artifacts": [
     { "match": "index.html", "maxBytes": 50000, "note": "page shell" },
     { "match": "assets/*.js", "maxBytes": 200000, "note": "all JS (hashed/immutable)" },
-    { "match": "assets/*.css", "maxBytes": 50000, "note": "CSS" },
+    { "match": "assets/*.css", "maxBytes": 80000, "note": "CSS (exemplar MBTA Viz stylesheet ~57KB)" },
     { "match": "data/network.json", "maxBytes": 200000, "note": "topology + schematic coords" },
     { "match": "data/schedule-*.json", "maxBytes": 150000, "note": "planned schedules per corridor" },
     { "match": "data/marey-trips-*.json", "maxBytes": 250000, "note": "The Trains — per day+line (SPEC §6.4/§8 R-11)" },

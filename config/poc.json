@@ -3,20 +3,6 @@
   "windowDays": 7,
   "lines": [
     {
-      "id": "gwml",
-      "name": "Great Western Main Line",
-      "color": "#0a7d33",
-      "nudge": {"x": 0, "y": 0},
-      "operators": [
-        "GW"
-      ],
-      "terminals": [
-        "PAD",
-        "BRI"
-      ],
-      "describe": "London Paddington -> Bristol Temple Meads via Reading, Didcot, Swindon, Bath"
-    },
-    {
       "id": "c2c",
       "name": "c2c",
       "color": "#1e56a0",
@@ -70,7 +56,6 @@
   ],
   "stationSet": {
     "crs": [
-      "ACL",
       "ALN",
       "ALR",
       "ATL",
@@ -138,6 +123,7 @@
       "FLT",
       "FLX",
       "FRI",
+      "FST",
       "GNT",
       "GRB",
       "GRC",
@@ -146,7 +132,6 @@
       "HAD",
       "HAP",
       "HAS",
-      "HEN",
       "HFE",
       "HLN",
       "HOC",
@@ -163,6 +148,7 @@
       "IPS",
       "KBX",
       "KEL",
+      "KGX",
       "KNE",
       "LAI",
       "LAK",
@@ -172,6 +158,7 @@
       "LGD",
       "LGJ",
       "LHS",
+      "LST",
       "LTN",
       "LUB",
       "LUT",
@@ -184,6 +171,7 @@
       "MKT",
       "MNE",
       "MNG",
+      "MOO",
       "MRW",
       "NFA",
       "NHD",
@@ -194,14 +182,12 @@
       "NWA",
       "NWE",
       "OCK",
-      "OUN",
       "OUS",
-      "PAD",
+      "PBX",
       "PFL",
       "PON",
       "PRL",
       "PSE",
-      "RDG",
       "RDT",
       "REE",
       "RFD",
@@ -229,15 +215,16 @@
       "SOE",
       "SOF",
       "SOJ",
+      "SOS",
       "SOV",
       "SPN",
       "SPP",
       "SRY",
       "SSD",
       "SST",
+      "STN",
       "SUC",
       "SUY",
-      "SWI",
       "SYT",
       "TIL",
       "TLS",
@@ -270,8 +257,7 @@
       "WRN",
       "WRT",
       "WSU",
-      "WTM",
-      "XTH"
+      "WTM"
     ],
     "tiploc": [
       "ACLE",

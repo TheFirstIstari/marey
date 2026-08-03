@@ -471,3 +471,96 @@ services:
 - NaPTAN: https://www.data.gov.uk/dataset/ff93ffc1-6656-47d8-9155-85ea0b8f2251/national-public-transport-access-nodes-naptan · https://naptan.api.dft.gov.uk/v1/access-nodes?dataFormat=csv
 - Open Rail Data wiki (archived): National Rail Data Portal · About the Feeds · Train Movements · SCHEDULE · VSTP · TD · RTPPM · Darwin Push Port · Reference Data · HSP (via web.archive.org, cited in §3.2/§6.3)
 - Render docs/pricing (verified 2026-08-02): https://render.com/docs/free · /docs/static-sites · /docs/blueprint-spec · /docs/cli-reference · /docs/outbound-bandwidth · https://render.com/pricing · /docs/new-workspace-plans
+
+---
+
+## 15. Visual Design System (UI Design Spec)
+
+*Incorporated from `docs/superpowers/specs/2026-08-02-ui-design.md` — the visual design system for the UK Rail Viz dashboard, emulating the MBTA Viz site's aesthetic.*
+
+### 15.1 Design Principles
+
+- **Data-first**: Visualizations dominate the viewport; chrome is minimal.
+- **Dark theme**: Deep navy background with amber accents — reads as "operations center."
+- **SVG-first**: All visualizations render as inline SVG; no canvas, no raster.
+- **Zero dependencies at runtime**: No D3, jQuery, Bootstrap, or any JS library in the browser.
+- **Timeless over trendy**: The MBTA Viz aesthetic has aged well because it's functional, not fashionable.
+
+### 15.2 Color Palette
+
+All colors are CSS custom properties in `:root` (`src/styles/main.css`).
+
+| Token | Value | Usage |
+|---|---|---|
+| `--bg` | `#0a1628` | Page background |
+| `--panel` | `#132236` | Card/slot background |
+| `--ink` | `#e8eef4` | Primary text |
+| `--muted` | `#7a8fa3` | Secondary text, axis labels, grid |
+| `--accent` | `#ffb400` | Section headings, highlights, active states |
+| `--line` | `#2a3a4a` | Borders, grid lines, dividers |
+| `--red` | `#ef4444` | Late/alert states |
+| `--green` | `#22c55e` | On-time states |
+
+### 15.3 Typography
+
+- **Font stack**: `-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`
+- **Base**: `16px / 1.5` on `html, body`
+- **Section headings (`h2`)**: `1.3rem`, `--accent` color, weight 600
+- **Panel titles**: `0.95rem`, `--accent` color
+- **Axis/station labels**: `11px`, `--muted` color
+- **Tooltips**: `0.8rem`, `1.35` line-height
+- **Status text**: `0.85rem`, `--muted` color
+
+### 15.4 Spacing Scale
+
+Consistent 4px/8px base scale using CSS custom properties:
+
+| Token | Value |
+|---|---|
+| `--sp-1` | `0.25rem` (4px) |
+| `--sp-2` | `0.5rem` (8px) |
+| `--sp-3` | `0.75rem` (12px) |
+| `--sp-4` | `1rem` (16px) |
+| `--sp-5` | `1.25rem` (20px) |
+| `--sp-6` | `1.5rem` (24px) |
+| `--sp-8` | `2rem` (32px) |
+
+### 15.5 Layout
+
+- Single long HTML page, one `<section>` per visualization with anchor IDs.
+- `max-width: 64rem` centered container with `margin: 0 auto`.
+- Sections separated by `1px solid var(--line)` border-bottom.
+- Section padding: `1.75rem 0`.
+- Each section has an `<h2>` title and optional `.viz-note` description.
+- SVG visualizations fill full container width (`width: 100%`).
+
+### 15.6 SVG Visualization Styles
+
+**General**: All SVGs use `viewBox` for responsive scaling, no fixed width/height. Grid lines: `stroke: var(--line)`, `stroke-width: 0.5`. Axis labels: `fill: var(--muted)`, `font-size: 11px`. Station labels: `fill: var(--muted)`, `font-size: 11px`, right-aligned.
+
+**Marey Chart (The Trains)**: Trajectory paths `stroke-width: 1.4`, `opacity: 0.75`, color per line. Dots `r: 1.8`. Selected: `opacity: 1`, `stroke-width: 2.6`. Dimmed (hover): `opacity: 0.15`.
+
+**The People (Heatmap)**: Heat cells `height: 16px`, `border-radius: 2px`. Active cell: `outline: 1px solid var(--ink)`, `outline-offset: 1px`. Heat ramp: `hsl(215, 60%, 22%)` → `hsl(45, 95%, 60%)`.
+
+**Congestion & Delay (Horizon Charts)**: Horizon areas `mix-blend-mode: multiply`. Delay band `opacity: 0.85`. Scrub line `stroke: var(--accent)`, `stroke-width: 2`.
+
+**Live Overlay**: On-time dots `fill: var(--green)`. Late dots `fill: var(--red)`. Labels `fill: var(--ink)`, `font-size: 9`.
+
+### 15.7 Interaction Patterns
+
+- **Delegated events**: Mouse events on parent wrapper `<div>`, not per-element.
+- **Hover**: Pure CSS class toggles. `.highlight-active` dims non-selected items via `opacity`.
+- **Tooltip**: Absolute-positioned `<div>`, dark background (`#0b1219`), amber strong text, `pointer-events: none`, `z-index: 5`.
+- **Click**: Toggle `.active` class for cross-section highlighting.
+- **No jQuery, no D3 v3**: All interactions use vanilla DOM APIs and SVG DOM methods.
+
+### 15.8 Deferred Sections
+
+The following sections are registered in `sections.js` but will not render until their data files are available: The People, Your Commute, Congestion & Delay, Live Overlay. These sections already have working renderers; they just need their data to be present.
+
+### 15.9 Implementation Notes
+
+- **Color values** are specified per the design system; exact MBTA Viz values should be verified by auditing the live site during implementation.
+- **No `box-shadow`** — MBTA Viz uses flat surfaces with no depth shadows.
+- **Axis label font size** — `11px` aligns with MBTA Viz's 10px–11px range.
+- **CSS migration** — the existing `src/styles/main.css` was updated to match the design system defined here (§3–§5 tokens, §6 layout, §7 SVG styles, §15.4 spacing scale).

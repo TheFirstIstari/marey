@@ -1,63 +1,413 @@
 <!doctype html>
 <html lang="en-GB">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+  <meta name="viewport" content="width=768">
   <title>UK Rail Viz</title>
-  <meta name="description" content="Visualising the UK rail network: train trajectories, station traffic, congestion and delay, commutes, and live train positions — built from Network Rail Darwin data.">
-  <link rel="stylesheet" href="assets/styles/main.css">
+  <meta name="description" content="An interactive exploration of train trajectories, station traffic, congestion, delay, and commutes on Britain's railways.">
+  <link href='assets/styles/main.css' rel='stylesheet' type='text/css'>
 </head>
 <body>
-  <header class="site-header">
-    <h1>UK Rail Viz</h1>
-    <p class="tagline">An MBTA-Viz-style look at Britain's railways, powered by Network Rail Darwin data (spec: <code>SPEC.md</code>).</p>
-    <p id="data-status" class="data-status" role="status">Loading data…</p>
-    <div class="viz-slot" data-viz-slot="marey-header"></div>
-  </header>
 
-  <main>
-    <section id="trains" class="viz-section">
-      <h2>The Trains</h2>
-      <p class="viz-note">Marey diagram of train trajectories across the corridor.</p>
-      <div class="marey-controls"><label for="marey-day-select">Day:</label> <select id="marey-day-select" class="marey-day-picker" aria-label="Select day for Marey diagram"><option value="">Loading…</option></select></div>
-      <div class="viz-slot" data-viz-slot="marey"></div>
-    </section>
+  <!-- Header -->
+  <div class="full-width header">
+    <div class="full-width header-inner">
+      <div class="container">
+        <div class="title col-sm-8">
+          <h1>UK Rail Viz</h1>
+          <h2>An interactive exploration of Britain's railways</h2>
+          <p class="authors">
+            A port of MBTA Viz (Mike Barry and Brian Card) onto UK rail data
+          </p>
+          <p id="data-status" class="data-status" role="status">Loading data…</p>
+        </div>
+        <div class="graphic col-sm-4 pull-right">
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <section id="people" class="viz-section">
-      <h2>The People</h2>
-      <p class="viz-note">Station traffic: hourly boardings/alightings heatmaps, usage table, and network map.</p>
-      <div class="viz-slot" data-viz-slot="usage"></div>
-    </section>
+  <!-- Intro -->
+  <div class="full-width section-intro">
+    <div class="container">
+      <p>Britain's railways are operated by a patchwork of train operating companies running over a shared national network.  Network Rail publishes the full schedule in the Darwin data feeds used by journey planners, as well as realtime train movements and performance records.  The following visualizations use timetable and performance data captured for the week around Tuesday 1 April 2025, covering four corridors: c2c, Greater Anglia, CrossCountry, and Great Northern — 202 stations in all.</p>
+      <p>We attempt to present this information to help people in Britain better understand the trains, how people use the trains, and how the people and trains interact with each other.</p>
+    </div>
+  </div>
 
-    <section id="delay" class="viz-section">
-      <h2>Congestion &amp; Delay</h2>
-      <p class="viz-note">Where and when the network runs late — delay horizon charts.</p>
-      <div class="viz-slot" data-viz-slot="delay"></div>
-    </section>
+  <!-- The Trains -->
+  <div class="full-width section-trains">
+    <div class="container">
+      <h3>
+        <a href="#trains" class="anchor"></a>
+        The Trains
+      </h3>
 
-    <section id="commute" class="viz-section">
-      <h2>Your Commute</h2>
-      <p class="viz-note">Point-to-point journey time percentiles for your usual trip.</p>
-      <div class="viz-slot" data-viz-slot="commute"></div>
-    </section>
+      <div class="row">
+        <div class="col-sm-7 col-lg-8">
+          <p>On a typical weekday, trains make approximately 12 trips across the four corridors shown here, starting in the early morning and continuing through the evening.  This is a synthetic demonstration dataset generated from the real feed structure.</p>
 
-    <section id="live" class="viz-section">
-      <h2>Live Trains</h2>
-      <p class="viz-note">Current train positions across the network, refreshed from Darwin.</p>
-      <div class="viz-slot" data-viz-slot="live"></div>
-    </section>
-  </main>
+          <p>To better understand how the trains operate on a typical day, below are all trips that trains took across the four corridors on Tuesday 1 April 2025.  Each vertical line represents a station, and time extends from top to bottom.  Steeper lines indicate slower trains.  This visualization was first used by Étienne-Jules Marey to visualize train schedules and is typically called a “Marey Diagram.”</p>
+        </div>
 
-  <footer class="site-footer">
-    <p>Data: Network Rail <a href="https://www.nationalrail.co.uk/developers/darwin-data-feeds/">Darwin</a> timetable &amp; performance feeds, licensed under the
-    <a href="https://www.nationalrail.co.uk/">Open Government Licence v2.0</a> with NRE variations.
-    <img src="assets/img/nre-logo.svg" alt="Powered by National Rail Enquiries" width="120" height="28" loading="lazy"></p>
-    <p>Live platform numbers are time-bound and suppressed per feed direction. Not an official National Rail product.</p>
-  </footer>
+        <div class="table-inset col-sm-5 col-lg-4">
+          <div class="table-caption">Number of Trips per Day</div>
+          <table class="table table-condensed table-hover">
+            <thead>
+              <tr><th></th><th class="bottom-border">Weekdays</th><th class="bottom-border">Saturdays</th><th class="bottom-border">Sundays</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>c2c</td><td>3</td><td>3</td><td>3</td></tr>
+              <tr><td>Greater Anglia</td><td>3</td><td>3</td><td>3</td></tr>
+              <tr><td>CrossCountry</td><td>3</td><td>3</td><td>3</td></tr>
+              <tr class="bottom-border"><td>Great Northern</td><td>3</td><td>3</td><td>3</td></tr>
+            </tbody>
+            <tfoot>
+              <tr><td>Total</td><td><strong>12</strong></td><td><strong>12</strong></td><td><strong>12</strong></td></tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
 
-  <script type="module">
-    import { bootSections } from './assets/js/sections.js';
-    bootSections();
-  </script>
+    <!-- Marey -->
+    <div class="full-width marey-container loading">
+      <div class="container text-center">
+        <h4>Trips on Tuesday 1 April 2025
+          <select id="marey-day-select" class="marey-day-picker" aria-label="Select day for the Marey diagram"><option value="">Loading…</option></select>
+        </h4>
+      </div>
+      <!-- The map and description on the left side -->
+      <div class="fixed-container">
+        <div class="fixed-left" data-top="100">
+          <div class="side-map">
+          </div>
+          <div class="side-caption">
+            <p>Locations of each train on the <a href="#" data-line="c2c" class="hover-link highlight">c2c</a>, <a href="#" data-line="ga" class="hover-link highlight">Greater Anglia</a>, <a href="#" data-line="xc" class="hover-link highlight">CrossCountry</a>, and <a href="#" data-line="gn" class="hover-link highlight">Great Northern</a> lines at <span class="marey-time"></span>.  Hover over the diagram to the right to display trains at a different time.</p>
+            <p>Trains are on the right side of the track relative to the direction they are moving.</p>
+            <p>
+              See the
+              <a href="#" data-dest="marey-morning-rush" class="click-link scrollto">morning rush-hour</a>,
+              <a href="#" data-dest="marey-midday-lull" class="click-link scrollto">midday lull</a>,
+              <a href="#" data-dest="marey-evening-rush" class="click-link scrollto">afternoon rush-hour</a>, and the
+              <a href="#" data-dest="marey-evening-lull" class="click-link scrollto">evening lull</a>.
+            </p>
+          </div>
+        </div>
+        <!-- The multi-page Marey diagram -->
+        <div class="fixed-right">
+          <div class="inner">
+            <div class="marey"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lined-up Marey diagram -->
+    <div class="full-width lined-up-marey-container">
+      <div class="container">
+        <p>
+          To better compare the individual trips on this day, the visualization below shows all of the trips from the above diagram juxtaposed with the starting points lined up so you can see the range of fastest to slowest trips, as well as variation in trip times based on the time of day.
+          The trains slow down a little bit during the
+          <a href="#" data-lo="7" data-hi="10" class="hover-link lined-up-highlight">morning rush-hour</a>.
+          The
+          <a href="#" data-lo="16" data-hi="19" class="hover-link lined-up-highlight">afternoon rush-hour</a>
+          is usually the worst time of day for journey times.  The
+          <a href="#" data-lo="10" data-hi="16" class="hover-link lined-up-highlight">midday lull</a>
+          and
+          <a href="#" data-lo="19" data-hi="24" class="hover-link lined-up-highlight">evening lull</a>
+          are both fairly consistent.  Hover over the time scale on the left to highlight trips during different parts of the day.  Click on a line to see at what time the train was at each stop.
+        </p>
+
+        <!-- Lined-up Marey -->
+        <div class="lined-up-marey"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- The People -->
+  <div class="full-width section-people loading">
+    <div class="container">
+      <h3>
+        <a href="#people" class="anchor"></a>
+        The People
+      </h3>
+      <p>In a typical weekday, hundreds of thousands of people pass through the stations along these four corridors.  The busiest days are weekdays, with ridership roughly halving at the weekend.</p>
+      <p>
+        This heatmap shows the average number of people that
+        <a href="#" class="hover-link dim" data-dim="exits">enter</a>
+        and
+        <a href="#" class="hover-link dim" data-dim="entrances">exit</a>
+        stations along the four corridors for every hour over the full week based on records from ticket gates at each station.  Each row represents one day. You can see weekends and weekdays with daily peaks at rush hour.
+        Our exit data is less reliable since not all stations require that people exit through a gate.
+      </p>
+
+      <!-- Turnstile heatmap over the all stations -->
+      <div class="spacing">
+        <h4 class="text-center">Entrances and Exits from All Stations during the Week</h4>
+        <div class="turnstile-total"></div>
+        <div class="turnstile key text-center"></div>
+      </div>
+
+      <p>
+        The table and map below breaks down the week's entries and exits by station.
+        Hover over a row in the table to highlight the corresponding circle on the map, or vice-versa.
+        Click on a row in the table to show a detailed heatmap for the entrances to and exits from that station over the week.
+        Click and drag on several table rows to highlight a range of stations.
+      </p>
+      <p>
+        You can see the busiest stations stand out clearly.
+        <a href="#" class="click-link highlight-stops" data-stops="FST">FST</a>
+        tops the list, followed close by
+        <a href="#" class="click-link highlight-stops" data-stops="ALN">ALN</a>
+        , and then
+        <a href="#" class="click-link highlight-stops" data-stops="ALR">ALR</a>
+        .  Next to each station are heatmaps showing
+        <a href="#" class="hover-link highlight" data-highlight="entrances">entrances</a>
+        and
+        <a href="#" class="hover-link highlight" data-highlight="exits">exits</a>
+        to each station per-hour for
+        <a href="#" class="hover-link highlight" data-highlight="weekday">weekdays</a>
+        and
+        <a href="#" class="hover-link highlight" data-highlight="offpeak">weekends/holidays</a>.
+        You can see that some stations are
+        <a href="#" class="click-link highlight-stops" data-stops="FST,LST,KGX">work stations</a>
+        since their exits peak in the morning and entrances peak in the afternoon and that some stations are
+        <a href="#" class="click-link highlight-stops" data-stops="SOS,SOV,IPS">home stations</a>
+        since their entrances peak in the morning and exits peak in the afternoon.  Some stations are just
+        <a href="#" class="click-link highlight-stops" data-stops="FST,CBG,ELY">busy all the time</a>.
+      </p>
+    </div>
+
+    <!-- Turnstile summary table - map on the left, table on the right -->
+    <div class="turnstile-viz fixed-container spacing">
+      <h4 class="text-center">Entrances and Exits per Station during the Week</h4>
+      <div class="fixed-left" data-top="0">
+        <div class="glyph clearfix"></div>
+        <div class="key circles clearfix"></div>
+        <div class="side-caption clearfix">
+          <p>
+            Each circle above and row in the table represent a station, hover over one to highlight the other.
+            Next to each station are heatmaps showing
+            <a href="#" class="hover-link highlight" data-highlight="entrances">entrances</a>
+            and
+            <a href="#" class="hover-link highlight" data-highlight="exits">exits</a>
+            to each station per-hour for
+            <a href="#" class="hover-link highlight" data-highlight="weekday">weekdays</a>
+            and
+            <a href="#" class="hover-link highlight" data-highlight="offpeak">weekends/holidays</a>.
+          </p>
+        </div>
+      </div>
+      <div class="fixed-right">
+        <div class="inner">
+          <div class="turnstile-table"></div>
+          <div class="turnstile-all-key key"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Congestions and Delay -->
+  <div class="full-width section-people-trains">
+    <div class="container">
+      <h3>
+        <a href="#interaction" class="anchor"></a>
+        How People and Trains Affect Each Other
+      </h3>
+      <p>When you look back at the Marey diagram, the slope of each line tells you how fast a train is going and the time it takes to get between stations.  When all of the start and stop times are lined up you can see a drastic variation in the time it takes to get between stops throughout the day.  If you have ever ridden the railway during rush hour then you have experienced what the steep lines in the Marey diagram feel like first-hand.</p>
+      <p>What causes these delays?  It’s hard to know for sure, but it appears that the number of people riding the railway is a factor.</p>
+    </div>
+
+    <div class="interaction-all">
+
+      <div class="container text-center">
+        <h4>One Week of Congestion and Delay</h4>
+      </div>
+      <div class="loading"></div>
+
+      <!-- The congestion and delay visualization - glyph on the left, horizon/color bands on the right -->
+      <div class="viz clearfix">
+        <div class="left clearfix">
+          <div class="glyph clearfix"></div>
+          <div class="key clearfix"></div>
+        </div>
+        <div class="right clearfix">
+        </div>
+      </div>
+
+      <div class="container">
+        <p>
+          This visualization shows congestion and delay on the four corridors for the first full week of the dataset. The <a href="#" class="hover-link highlight" data-highlight=".horizon">gray bands</a> show the total number of entries into all stations per minute over time for each day of the week.  The <a href="#" class="hover-link highlight" data-highlight=".delay-rect">colored bands</a> below indicate whether the trains are running <span class="legend-fast">faster</span> or <span class="legend-slow">slower</span> than normal.
+        </p>
+        <p>
+          The <a href="#" class="hover-link highlight" data-highlight=".breathing-glyph">map</a> shows the congestion and delay across the system at a time when you hover over the chart on the right.  The thickness of each line at a stop indicates number of entries per minute at that stop, and the color on the right-hand side of a track indicates delay in that direction using the same scale as the <a href="#" class="hover-link highlight" data-highlight=".delay-rect">colored bands</a>.
+        </p>
+        <p>
+          You can see the morning and evening rush-hour peaks on every weekday, for example on
+          <a href="#" class="hover-link set-time" data-day="1" data-time="5:24 pm">Thursday</a>,
+          <a href="#" class="hover-link set-time" data-day="2" data-time="5:24 pm">Friday</a>, and
+          <a href="#" class="hover-link set-time" data-day="5" data-time="5:24 pm">Monday</a>.
+          You can also compare how
+          <a href="#" class="hover-link highlight" data-highlight=".day-3">Saturday</a>
+          and Sunday differ from the weekdays, for example
+          <a href="#" class="hover-link set-time" data-day="3" data-time="5:24 pm">Saturday evening's rush hour</a>
+          versus
+          <a href="#" class="hover-link set-time" data-day="4" data-time="5:24 pm">Sunday evening's</a>,
+          or
+          <a href="#" class="hover-link set-time" data-day="6" data-time="11:00 am">Tuesday morning</a>
+          compared to a weekday morning.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pick Two Stops -->
+  <div class="full-width section-pick-two">
+    <div class="container">
+      <h3>
+        <a href="#your-commute" class="anchor"></a>
+        Your Commute
+      </h3>
+      <p>
+        How do all of these factors affect your commute?
+        Click and drag on the
+        <a href="#" data-highlight=".map" class="hover-link pick-two-highlight">map</a>
+        from a starting station to an ending station to see a detailed breakdown of how long that trip takes at different points during a typical workday.
+        The
+        <a href="#" data-highlight=".circle.top" class="hover-link pick-two-highlight">points on top</a>
+        show all of the trip durations for a given starting time from the start to destination and the
+        <a href="#" data-highlight=".circle.bottom" class="hover-link pick-two-highlight">points on bottom</a>
+        show all of the times between when trains leave the start station going to the destination station.
+        The time between trains is the longest you would possibly need to wait if you arrived just as the previous train was leaving.
+        The
+        <a href="#" data-highlight=".top.range" class="hover-link pick-two-highlight">blue band</a>
+        excludes the shortest and longest 10% of all transit times, leaving behind the most-likely 80% range and the
+        <a href="#" data-highlight=".bottom.range" class="hover-link pick-two-highlight">orange band</a>
+        does the same for wait times between trains.
+        The
+        <a href="#" data-highlight=".p50" class="hover-link pick-two-highlight">dark lines</a>
+        show the middle point where 50% of the time wait/transit times are higher and 50% of the time they are lower.
+      </p>
+    </div>
+
+    <div class="viz clearfix">
+      <div class="left picker clearfix">
+        <div class="map dimmable clearfix"></div>
+        <div class="details dimmable clearfix"></div>
+        <div class="loading clearfix"></div>
+        <div class="key dimmable clearfix">
+          <span class="hide-on-ios">Drag from a starting station to an ending station to see how long the trip takes over time in the chart.</span>
+          <span class="only-ios">Click on a starting station then an ending station to see how long the trip takes over time in the chart.</span>
+        </div>
+      </div>
+      <div class="right pick-two clearfix">
+        <div class="inner-viz">
+        </div>
+        <div class="key dimmable clearfix">
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <p>
+        In general, delays go up during rush hour but trains come more frequently, for example if you look at
+        <a href="#" data-start="FST" data-end="SOS" class="click-link pick-two-choose">Fenchurch Street to Southend Central</a>
+        you will notice that the
+        <a href="#" data-highlight=".circle.top, .top.range" class="hover-link pick-two-highlight">transit times</a>
+        go up as the
+        <a href="#" data-highlight=".circle.bottom, .bottom.range" class="hover-link pick-two-highlight">wait times</a>
+        go down.
+        If you drag across the chart, the paragraph below will tell you that these effects roughly balance each other out and the most-likely trip duration (half the normal time between trains plus total transit time) stays fairly constant.
+        Commute data is currently available for the eastern-region origins (Fenchurch Street, Liverpool Street, King's Cross, Moorgate, Cambridge, Peterborough, Norwich, Ipswich, Southend Central and Stansted); picking any other pair of stations will show a message explaining that no data is available for that origin yet.
+      </p>
+    </div>
+  </div>
+
+  <!-- Live -->
+  <div class="full-width section-live">
+    <div class="container">
+      <h3>
+        <a href="#live" class="anchor"></a>
+        Live Trains
+      </h3>
+      <p>Current train positions across the four corridors, captured from the Network Rail Darwin feed.  The table below shows the latest snapshot.</p>
+      <div id="live"></div>
+    </div>
+  </div>
+
+  <!-- Credits -->
+  <div class="full-width section-credits">
+    <div class="container">
+      <h3>
+        <a href="#credits" class="anchor"></a>
+        Credits
+      </h3>
+      <p>
+        This project is a port of the MBTA Viz project created by
+        <a href="http://github.com/msbarry" target="_blank">Michael Barry</a> and
+        <a href="http://github.com/bcard" target="_blank">Brian Card</a>
+        for a graduate course in Data Visualization at
+        <a href="http://www.wpi.edu/" target="_blank">WPI</a>.
+        Several open-source projects were used under the
+        <a href="http://opensource.org/licenses/MIT" target="_blank">MIT License</a>
+        including
+        <a href="http://d3js.org/" target="_blank">D3</a>,
+        <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>,
+        <a href="http://underscorejs.org/" target="_blank">Underscore</a>,
+        <a href="http://momentjs.com/" target="_blank">Moment.js</a>,
+        <a href="https://github.com/paulmillr/es6-shim/" target="_blank">es6-shim</a>, and
+        <a href="http://labratrevenge.com/d3-tip/" target="_blank">D3-tip</a>.
+      </p>
+    </div>
+  </div>
+
+  <!-- Source Code -->
+  <div class="full-width section-source-code">
+    <div class="container">
+      <h3>
+        <a href="#source-code" class="anchor"></a>
+        Source Code &amp; Data
+      </h3>
+      <p>
+        The source code and raw data are available
+        <a href="https://github.com/mbtaviz/mbtaviz.github.io/" target="_blank">on github</a>
+        for the original MBTA Viz; the UK port lives in this repository.
+      </p>
+      <p>
+        Data: Network Rail
+        <a href="https://www.nationalrail.co.uk/developers/darwin-data-feeds/" target="_blank">Darwin</a>
+        timetable &amp; performance feeds, licensed under the
+        <a href="https://www.nationalrail.co.uk/" target="_blank">Open Government Licence v2.0</a> with NRE variations.
+        <img src="assets/img/nre-logo.svg" alt="Powered by National Rail Enquiries" class="nre-logo" width="120" height="28" loading="lazy">
+      </p>
+      <p>Live platform numbers are time-bound and suppressed per feed direction. Not an official National Rail product.</p>
+    </div>
+  </div>
+
+  <!-- 3rd Party Dependencies -->
+  <script src="assets/vendor/es6-shim.js"></script>
+  <script src="assets/vendor/underscore-min.js"></script>
+  <script src="assets/vendor/moment.min.js"></script>
+  <script src="assets/vendor/d3.min.js"></script>
+  <script src="assets/vendor/jquery.min.js"></script>
+
+  <!-- D3 Plugins -->
+  <script src="assets/js/horizon.js"></script>
+  <script src="assets/vendor/d3-tip.js"></script>
+
+  <!-- Custom Code -->
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/uk-data.js"></script>
+  <script src="assets/js/files.js"></script>
+  <script src="assets/js/dataloader.js"></script>
+  <script src="assets/js/fixed.js"></script>
+  <script src="assets/js/header.js"></script>
+  <script src="assets/js/the-trains.js"></script>
+  <script src="assets/js/the-people.js"></script>
+  <script src="assets/js/congestion-and-delay.js"></script>
+  <script src="assets/js/your-commute.js"></script>
+  <script src="assets/js/live.js"></script>
 </body>
 </html>
