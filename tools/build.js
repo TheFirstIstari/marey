@@ -84,7 +84,7 @@ function build() {
   const htmlPath = join(DIST, 'index.html');
   let html = readFileSync(htmlPath, 'utf8');
   for (const [oldUrl, newUrl] of assetRename) {
-    html = html.split(oldUrl).join(newUrl);
+    html = html.replace(new RegExp(`(src|href)="${oldUrl}"`, 'g'), `$1="${newUrl}"`);
   }
   writeFileSync(htmlPath, html);
 

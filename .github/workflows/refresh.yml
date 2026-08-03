@@ -61,7 +61,7 @@ jobs:
           git config user.email "bot@ukrailviz.local"
           if [ -n "$(git status --porcelain data/)" ]; then
             git add data/
-            git commit -m "chore(data): refresh rail data [skip render]"
+            git commit -m "chore(data): refresh rail data [skip ci]"
             git push "https://x-access-token:${GH_PAT}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
           else
             echo "no data changes — nothing to commit"

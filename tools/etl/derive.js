@@ -520,6 +520,10 @@ export async function deriveActuals(trips, hspClient, options = {}) {
     lines: (options.cfg || { lines: [] }).lines.map((l) => ({ id: l.id, name: l.name, color: l.color })),
   });
 
+  if (!options.cfg || !options.cfg.lines) {
+    console.warn('deriveActuals: cfg.lines not provided — marey-index.json lines array will be empty');
+  }
+
   for (const trip of trips) {
     const key = `data/marey-trips-${date}-${trip.line}.json`;
     write(key, [trip]);

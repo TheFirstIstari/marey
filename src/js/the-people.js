@@ -569,9 +569,9 @@ VIZ.requiresData([
     .on('focus', highlightStationOrStationRange)
     .on('blur', unHighlightStation)
     .on('keydown', function (event, d) {
-      if (d3.event.key === 'Enter' || d3.event.key === ' ') {
-        d3.event.preventDefault();
-        toggle(showingStations[d.name]);
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        showingStations[d.name] = !showingStations[d.name];
         updateShownStations(d.name);
         d3.select(this).attr('aria-expanded', showingStations[d.name] ? 'true' : 'false');
       }
@@ -579,9 +579,10 @@ VIZ.requiresData([
 
   // When row clicked, toggle its details below
   stationRows
-    .on('click', function (d) {
+    .on('click', function (event, d) {
       showingStations[d.name] = !showingStations[d.name];
       updateShownStations(d.name);
+      d3.select(this).attr('aria-expanded', showingStations[d.name] ? 'true' : 'false');
     });
 
   // Left-pixel alignments for each part of the bar chart

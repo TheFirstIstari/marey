@@ -34,7 +34,7 @@ try {
 } catch { /* directory may not exist yet */ }
 
 function writeJson(name, obj) {
-  writeFileSync(join(DATA, name), JSON.stringify(obj));
+  writeFileSync(join(DATA, name), JSON.stringify(obj) + '\n', 'utf8');
 }
 
 // ── stations.json ──────────────────────────────────────────
@@ -54,14 +54,12 @@ try {
   }
 } catch (_) { /* ref XML not available — use CRS codes as names */ }
 
-const STATIONS = poc.stationSet.crs.map((crs) => {
+const STATIONS = poc.stationSet.crs.map((crs, i) => {
   const name = refStationNames[crs] || crs;
-  // Approximate eastern-UK coordinates (not real NaPTAN — M1 join pending).
-  const lat = 51.5 + Math.random() * 0.5 - 0.25;
-  const lon = -0.1 + Math.random() * 0.3 - 0.15;
-  // Realistic usage distribution: major London terminals have high usage,
-  // suburban stations have lower usage.
-  const usage = Math.round(500000 + Math.random() * 8000000);
+  // Deterministic approximate eastern-UK coordinates based on index.
+  const lat = 51.5 + (i % 10) * 0.01;
+  const lon = -0.1 + (i % 20) * 0.005;
+  const usage = 500000 + (i * 7913) % 8000000;
   return { crs, name, lat: Math.round(lat * 1000) / 1000, lon: Math.round(lon * 1000) / 1000, tiploc: crs + 'A', stanox: crs + '1', usage };
 });
 writeJson('stations.json', STATIONS);

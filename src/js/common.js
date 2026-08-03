@@ -144,7 +144,8 @@
           line.pop();
           tspan.text(line.join(" "));
           line = word !== '<br>' ? [word] : [];
-          tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+          tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em");
+          if (word !== '<br>') tspan.text(word);
         }
       }
     });
