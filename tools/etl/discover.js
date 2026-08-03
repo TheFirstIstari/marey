@@ -1,10 +1,11 @@
 // tools/etl/discover.js — Discover PoC station set from the real timetable sample.
-// Usage: node tools/etl/discover.js raw/timetable/{ts}_v8.xml.gz
+// Usage: node tools/etl/discover.js raw/timetable/{ts}_v{n}.xml.gz
 // Writes raw/discovery.json with { tocCounts, stations }.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseTimetable, parseRef } from './xml.js';
+import { pickHighestVersion } from './collect.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '../..');
@@ -24,7 +25,14 @@ async function main() {
     process.exit(1);
   }
 
-  const refPath = join(ROOT, 'raw', 'ref', `${ts}_ref_v99.xml.gz`);
+  const refDir = join(ROOT, 'raw', 'ref');
+  const refFiles = existsSync(refDir) ? readdirSync(refDir) : [];
+  const refKey = pickHighestVersion(refFiles.filter((f) => f.startsWith(`${ts}_ref_`) && f.endsWith('.xml.gz')), { ref: true });
+  if (!refKey) {
+    console.error('No ref file found for timestamp:', ts);
+    process.exit(1);
+  }
+  const refPath = join(refDir, refKey);
   if (!existsSync(refPath)) {
     console.error('Ref file not found:', refPath);
     process.exit(1);

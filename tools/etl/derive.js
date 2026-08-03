@@ -26,6 +26,20 @@ function outWriter(outDir) {
 
 // --- Helper functions for planned derivation ---
 
+export function pickVersionFile(files, { ref } = {}) {
+  const filtered = files.filter((f) => {
+    if (ref && !f.includes('_ref_')) return false;
+    if (!ref && f.includes('_ref_')) return false;
+    return /_v\d+\.xml\.gz$/.test(f);
+  });
+  filtered.sort((a, b) => {
+    const va = a.match(/_v(\d+)/)[1] || '0';
+    const vb = b.match(/_v(\d+)/)[1] || '0';
+    return Number(vb) - Number(va);
+  });
+  return filtered[0] || null;
+}
+
 function findRawFiles(rawDir) {
   const dir = join(ROOT, rawDir);
   const ttDir = join(dir, 'timetable');
@@ -35,8 +49,8 @@ function findRawFiles(rawDir) {
   if (existsSync(ttDir) || existsSync(refDir)) {
     const ttFiles = existsSync(ttDir) ? readdirSync(ttDir) : [];
     const refFiles = existsSync(refDir) ? readdirSync(refDir) : [];
-    const refFile = refFiles.find((f) => f.includes('_ref_') && f.endsWith('.xml.gz'));
-    const ttFile = ttFiles.find((f) => f.includes('_v8.xml.gz') && !f.includes('_ref_'));
+    const refFile = pickVersionFile(refFiles, { ref: true });
+    const ttFile = pickVersionFile(ttFiles);
     return {
       refFile: refFile ? join(refDir, refFile) : null,
       ttFile: ttFile ? join(ttDir, ttFile) : null,
@@ -45,8 +59,8 @@ function findRawFiles(rawDir) {
 
   // Otherwise look directly in rawDir.
   const files = existsSync(dir) ? readdirSync(dir) : [];
-  const refFile = files.find((f) => f.includes('_ref_') && f.endsWith('.xml.gz'));
-  const ttFile = files.find((f) => f.includes('_v8.xml.gz') && !f.includes('_ref_'));
+  const refFile = pickVersionFile(files, { ref: true });
+  const ttFile = pickVersionFile(files);
   return {
     refFile: refFile ? join(dir, refFile) : null,
     ttFile: ttFile ? join(dir, ttFile) : null,
@@ -304,7 +318,7 @@ export async function derivePlanned({ cfg, stations, rawDir, outDir = join(ROOT,
 
   for (const line of cfg.lines) {
     const lineSchedules = allSchedulesByLine[line.id] || [];
-    const trimmed = lineSchedules.slice(0, 50);
+    const trimmed = lineSchedules.slice(0, 50); // safety limit: cap schedule entries to keep output bounded
     const scheduleData = trimmed.map((s) => ({
       uid: s.uid,
       headcode: s.headcode,

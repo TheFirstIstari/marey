@@ -1,7 +1,7 @@
 # --- Generated / local ---
 node_modules/
 dist/
-raw/               # raw Darwin/NROD downloads (never commit)
+raw/               # raw Darwin/NROD downloads (never commit; sample feeds tracked for CI tests)
 *.log
 .DS_Store
 .superpowers/     # SDD workspace and ledger (never commit)

@@ -49,8 +49,8 @@ jobs:
       - name: Derive artifacts
         run: npm run derive
 
-      - name: Full test suite
-        run: npm test
+      - name: Verify (smoke + build + unit tests — data stays derived)
+        run: node tools/smoke-test.js && npm run build && node --test tests/*.test.js
 
       - name: Build and budget check
         run: npm run build
