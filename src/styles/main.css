@@ -3141,6 +3141,8 @@ a.section-pick-two .viz .picker .loading.err:hover {
 }
 .marey-day-picker:focus { outline: 1px solid #337ab7; }
 
+.turnstile-table .row:focus { outline: 1px solid #428bca; outline-offset: -1px; }
+
 /* Header data-status line */
 .data-status { font-size: 12px; color: #888; margin: 4px 0 0; }
 

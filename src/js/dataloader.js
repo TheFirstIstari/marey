@@ -16,6 +16,14 @@
 (function () {
   "use strict";
 
+  var pendingLoads = 0;
+
+  function setStatus(text) {
+    if (typeof document === 'undefined') return;
+    var el = document.getElementById('data-status');
+    if (el) el.textContent = text;
+  }
+
   function Listener(files, changesPageSize) {
     var self = this;
     self.files = files;
@@ -38,6 +46,7 @@
       }
       return a + VIZ.fileSizes[name];
     }, 0);
+    pendingLoads++;
     files.forEach(function (file) {
       var parts = file.split('!');
       var type = parts[0];
@@ -48,6 +57,7 @@
       })
       .get(function(error, data) {
         if (error) {
+          setStatus('Error loading data');
           self.errorListeners.forEach(function (listener) { listener(error); });
           self.doneListeners = [];
           self.progressListeners = [];
@@ -86,6 +96,10 @@
     var self = this;
     this.data[file] = data;
     if (d3.keys(this.data).length === this.files.length) {
+      pendingLoads--;
+      if (pendingLoads === 0) {
+        setStatus('All data loaded');
+      }
       var results = this.files.map(function (file) {
         return self.data[file];
       });
