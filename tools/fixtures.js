@@ -17,7 +17,6 @@ const poc = JSON.parse(readFileSync(join(ROOT, 'config/poc.json'), 'utf8'));
 const KNOWN_ARTIFACTS = [
   'marey-trips.json',
   'stations.json',
-  'schedule-gwml.json',
   'marey-index.json',
   'live-delta.json',
 ];
