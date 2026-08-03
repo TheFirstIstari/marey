@@ -561,6 +561,22 @@ VIZ.requiresData([
       .on('mouseout', unHighlightStation);
   }
 
+  stationRows
+    .attr('tabindex', 0)
+    .attr('role', 'button')
+    .attr('aria-label', function (d) { return d.name + '…'; })
+    .attr('aria-expanded', function (d) { return showingStations[d.name] ? 'true' : 'false'; })
+    .on('focus', highlightStationOrStationRange)
+    .on('blur', unHighlightStation)
+    .on('keydown', function (event, d) {
+      if (d3.event.key === 'Enter' || d3.event.key === ' ') {
+        d3.event.preventDefault();
+        toggle(showingStations[d.name]);
+        updateShownStations(d.name);
+        d3.select(this).attr('aria-expanded', showingStations[d.name] ? 'true' : 'false');
+      }
+    });
+
   // When row clicked, toggle its details below
   stationRows
     .on('click', function (d) {
