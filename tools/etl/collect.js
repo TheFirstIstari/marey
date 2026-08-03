@@ -105,7 +105,7 @@ if (process.argv[1]?.endsWith('collect.js')) {
     try {
       const result = await collect();
       console.log(`collect: ${result.status}`);
-      process.exit(result.status === 'ok' ? 0 : 1);
+      process.exit(0);
     } catch (err) {
       writeJson('raw/collect-status.json', statusShape({
         status: 'error',

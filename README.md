@@ -16,7 +16,7 @@ powered by precomputed JSON derived from Network Rail **Darwin** data.
 | --- | --- |
 | `npm install` | Install dev tooling (creates the lockfile). |
 | `npm run fixtures` | Generate fixture data (used when live feeds are unavailable). |
-| `npm test` | Fixtures → smoke test → unit tests. |
+| `npm test` | Fixtures → smoke → build → unit tests. |
 | `npm run build` | Assemble `dist/`, enforce §8 budgets (fails on overrun). |
 | `npm run pipeline` | Collect → derive → smoke → build (the ETL chain). |
 | `npm run dev` | Start the dev server on port 3000. |
@@ -27,17 +27,17 @@ The codebase was audited against both `SPEC.md` and the consolidated visual
 design spec (formerly `docs/superpowers/specs/2026-08-02-ui-design.md`, now
 §15 of `SPEC.md`). Key compliance results:
 
-- **59/72 checks pass** — all architecture, data pipeline, budget, and
-  runtime-dependency checks pass.
-- **13 CSS/design-token gaps** — the UI design spec's color palette, spacing
+- **All architecture, data pipeline, budget, and runtime-dependency checks pass.**
+- **CSS/design-token gaps resolved** — the UI design spec's color palette, spacing
   scale, and SVG stroke-widths have been applied to `src/styles/main.css`.
-- All 39 unit tests pass; build passes with all payload budgets OK.
+- All 21 unit tests (9 ETL + 7 tooling + 5 fixtures) pass; build passes with all payload budgets OK.
 
 ## Status
 
 - **M0** scaffolding complete — static site, fixtures, budgets, tests, build, render.yaml.
+- **M1** tooling committed, not live — the Darwin ETL (`collect.js`) is implemented but CI is red until the collect fix and secrets are configured.
 - **M2** Marey diagram (The Trains) live on fixture data — vanilla SVG, hover-to-highlight.
 - **M3** The People — station traffic heatmap (stations × 24 h), sorted usage table, and schematic map, all cross-highlighted (hover/click any panel → all react).
 
-Remaining milestones (M1, M4–M7) land incrementally; see SPEC.md §11 for the
+Remaining milestones (M4–M7) land incrementally; see SPEC.md §11 for the
 roadmap. M1 (the live Darwin ETL) needs your bucket credentials as env vars.

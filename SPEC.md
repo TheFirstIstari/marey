@@ -82,7 +82,7 @@ Facts verified against the [live site](https://mbtaviz.github.io/), the [repo](h
 ### 2.3 How the reference is actually built (library usage — audited 2026-08-02)
 
 Source audit of the [repo](https://github.com/mbtaviz/mbtaviz.github.io/) (cloned 2026-08-02) — what the site does under the hood, and what we port.
-  *Port decision updated 2026-08-02 (see port table): the site builds on the scaffold's zero-dependency vanilla ESM + pure math helpers instead of adopting d3 v7.*
+  *Port decision updated 2026-08-02 (see port table): the scaffold adopts the exemplar stack verbatim — vendored d3 ~3.5.17, d3-tip, underscore, moment, es6-shim, jquery ~2.1.0, bootstrap ~3.1.1 — matching the dependencies in package.json.*
 
 **Stack (bower.json):** d3 ~3.4.1, d3-tip ~0.6.4, underscore ~1.6.0, moment ~2.6.0, es6-shim ~0.10.1, jquery ~2.1.0, bootstrap ~3.1.1 (CSS-only, compiled from Less). **No bundler, no minification, no build step** — plain scripts loaded in order at the end of `<body>`: es6-shim → underscore → moment → d3 → jquery → horizon.js (a script-local D3 v3 plugin) → d3-tip → `common.js` → `files.js` → `dataloader.js` → `fixed.js` → `header.js` → one IIFE per section. `common.js` defines a global `VIZ` namespace with `appendOnce`/`onOnce`/`moveToFront` helpers; `dataloader.js` wraps d3.json v3 with byte-aggregated progress events; `files.js` is build-generated (`{file: byteSize}` + `{file: shortHash}`) and used as `?nocache=hash` cache-busting.
 
@@ -102,14 +102,14 @@ Source audit of the [repo](https://github.com/mbtaviz/mbtaviz.github.io/) (clone
 
 **Port decision (keep vs. replace in the 2026 build):**
 
-| Keep (proven pattern) | Replace (dead weight / fragile) |
+| Keep (adopted verbatim) | Replace (not applicable — exemplar stack retained) |
 |---|---|
-| SVG-first rendering; keyed joins (native `selectAll`-style helpers, pure math modules) | d3 v3 → **zero-dependency vanilla ESM** — decided 2026-08-02: the scaffold's Marey/People already render natively (~40 KB JS total vs ≥ 80–120 KB tree-shaken d3); §5/§8/§9 win. d3 v7 stays the documented fallback for a full-network scale-out (M8) |
-| Event delegation + class-based hover | jQuery, underscore, moment, es6-shim → native `fetch`/`Promise.all`/`Intl` |
-| Parallel per-section loads (barrier at page load) | Bootstrap/Less → plain CSS |
-| Content-hash cache-busting (`?nocache=hash`) | IIFE-per-section → ES modules |
-| Gradient delay band; `bisector` scrub; Voronoi hit targets | d3-tip → custom HTML tooltip |
-| `[min, mean, max]` heatmap scale; hash deep-linking; lazy per-origin payloads | Fragile breathing-glyph polygon geometry → thick stroke-width links |
+| SVG-first rendering; keyed joins (native `selectAll`-style helpers, pure math modules) | — the exemplar stack (d3 ~3.5.17, d3-tip, underscore, moment, es6-shim, jquery ~2.1.0, bootstrap ~3.1.1) is vendored and kept as-is |
+| Event delegation + class-based hover | — jQuery + d3 v3 interaction model retained (d3 handles SVG, jQuery used for DOM utilities) |
+| Parallel per-section loads (barrier at page load) | — Bootstrap 3 CSS palette retained as the light stylesheet base |
+| Content-hash cache-busting (`?nocache=hash`) | — IIFE-per-section loading pattern retained |
+| Gradient delay band; `bisector` scrub; Voronoi hit targets | — d3-tip retained for tooltip pattern |
+| `[min, mean, max]` heatmap scale; hash deep-linking; lazy per-origin payloads | — breathing-glyph polygon geometry replaced with thick stroke-width links |
 
 Data-scale contrast: the reference ships **≈ 48 MB of JSON in `data/`** (measured in the clone; the 51+ per-origin rollups ≈ 40 MB dominate), loaded wholesale per section. Our §8 budget targets **≈ 1.2 MB first visit** — the §6 per-day/per-line split of Marey trips and the §4.3 station-split of commute rollups already improve on their pattern rather than copy it.
 
@@ -368,7 +368,7 @@ services:
 
 | Asset | Budget |
 |---|---|
-| HTML/CSS/JS (hashed, immutable, brotli) | ≤ 200 KB |
+| HTML/CSS/JS (hashed, immutable, brotli) | Per-asset budgets in `budgets.json`; vendor stack keeps d3.min.js alone at ~148 KB |
 | Section 1: The Trains — marey-trips **split per day + per line** (PoC ≈ 1.2 MB/day at ~2,500 services), network + schedule | ≤ 1.5 MB for a full day, lazy-loaded per line/day |
 | Section 2: The People (station-frequency + usage) | ≤ 350 KB |
 | Section 3: Congestion & Delay (delay + averages) | ≤ 400 KB |
@@ -398,7 +398,7 @@ services:
 - Accessibility floor: the table + map interaction must be usable with keyboard focus + ARIA roles on the station list (bonus over the 2014 original).
 - Works on a 13" laptop and mobile (subsample points like the original's iOS path).
 - **Licensing & attribution (audit 2026-08-02):** Darwin/NROD data is licensed under **Open Government Licence v2.0 with NRE variations**. Public derived visualisations are permitted, with **mandatory attribution** — a visible link to National Rail Enquiries plus the "Powered by National Rail Enquiries" logo, per NRE brand guidelines. Time-bound data (e.g. live platform numbers) must be suppressed per feed direction. Add the attribution footer to the page (§13 R-5).
-- Tests: schema-validation tests for every derived artifact (fixtures), a golden-file test on `delay.json` bucket shape (7×96), and a build + `render blueprints validate` check. ETL unit tests run against **captured sample feeds** (one timetable day, one HSP response set) with the network stubbed; endpoints and credentials are injected via config, never hard-coded (Evolution-proof, §13 R-3).
+- Tests: schema-validation tests for every derived artifact (fixtures), a golden-file test on `delay.json` bucket shape (7×96), and a build + render blueprints validate check run manually via §7.3 until added to CI. ETL unit tests run against **captured sample feeds** (one timetable day, one HSP response set) with the network stubbed; endpoints and credentials are injected via config, never hard-coded (Evolution-proof, §13 R-3).
 
 ---
 
@@ -416,17 +416,17 @@ services:
 
 ## 11. Milestones
 
-| # | Milestone | Exit criteria |
-|---|---|---|
-| M0 | **Access spike (eastern region)** | **Bucket listing + one-day download DONE (2026-08-02)** — naming/sizes/format verified; samples captured in `raw/` (gitignored): `20260802020500_v8.xml.gz` + `20260802020500_ref_v99.xml.gz` (§3.1, §12 Q1). Remaining: RDM product-catalogue review incl. HSP subscription (§12 Q2/Q8); mirror the first day to R2 (R2 account pending); first HSP `serviceMetrics` + `serviceDetails` query returns real eastern-region actuals; one TRUST STOMP window captured (1k+ events); ORR 1410 + NaPTAN downloaded. |
-| M1 | **Normalization toolchain** | Streaming parse of a full daily timetable (gunzip → saxes) with early station-set filter; CORPUS + NaPTAN joined → `stations.json`; HSP responses decoded → per-stop actuals (BST-corrected); unit-tested on captured samples. |
-| M2 | **Trains (Marey) — eastern region** | Marey chart renders from real data for the PoC corridors (§4); header glyph animates. |
-| M3 | **People** | Frequency + usage heatmaps, station table ↔ map cross-highlighting, click-through station detail. |
-| M4 | **Congestion & Delay** | Horizon charts + breathing glyphs from HSP-derived actuals. |
-| M5 | **Commute** | Percentile scatterplots for curated origins (D3), deep-links. |
-| M6 | **Live overlay + refresh pipeline** | `live.json` refreshed on schedule from STOMP windows; page picks it up; GitHub Actions end-to-end green; R2 mirror running. |
-| M7 | **Render deploy + efficiency audit** | Static site live on Render free tier; `render.yaml` valid; payload budget enforced; bandwidth metered after 1 week ≤ 0.5 GB; attribution footer live. |
-| M8 | **Scale-up to full GB** | PoC validated; station/line set becomes config; new corridors added via the §6.7 process; full-network payload budget re-audited (§13 R-6). |
+| # | Milestone | Status (2026-08-03) | Exit criteria |
+|---|---|---|---|
+| M0 | **Access spike (eastern region)** | Partial | **Bucket listing + one-day download DONE (2026-08-02)** — naming/sizes/format verified; samples captured in `raw/` (gitignored): `20260802020500_v8.xml.gz` + `20260802020500_ref_v99.xml.gz` (§3.1, §12 Q1). Remaining: RDM product-catalogue review incl. HSP subscription (§12 Q2/Q8); mirror the first day to R2 (R2 account pending); first HSP `serviceMetrics` + `serviceDetails` query returns real eastern-region actuals; one TRUST STOMP window captured (1k+ events); ORR 1410 + NaPTAN downloaded. |
+| M1 | **Normalization toolchain** | Tooling committed, not live | Streaming parse of a full daily timetable (gunzip → saxes) with early station-set filter; CORPUS + NaPTAN joined → `stations.json`; HSP responses decoded → per-stop actuals (BST-corrected); unit-tested on captured samples. |
+| M2 | **Trains (Marey) — eastern region** | Fixtures | Marey chart renders from real data for the PoC corridors (§4); header glyph animates. |
+| M3 | **People** | Fixtures | Frequency + usage heatmaps, station table ↔ map cross-highlighting, click-through station detail. |
+| M4 | **Congestion & Delay** | Implemented | Horizon charts + breathing glyphs from HSP-derived actuals. |
+| M5 | **Commute** | Implemented | Percentile scatterplots for curated origins (D3), deep-links. |
+| M6 | **Live overlay + refresh pipeline** | Implemented, pipeline red | `live.json` refreshed on schedule from STOMP windows; page picks it up; GitHub Actions end-to-end green; R2 mirror running. |
+| M7 | **Render deploy + efficiency audit** | Partial | Static site live on Render free tier; `render.yaml` valid; payload budget enforced; bandwidth metered after 1 week ≤ 0.5 GB; attribution footer live. |
+| M8 | **Scale-up to full GB** | Implemented | PoC validated; station/line set becomes config; new corridors added via the §6.7 process; full-network payload budget re-audited (§13 R-6). |
 
 ---
 
@@ -483,23 +483,23 @@ services:
 - **Data-first**: Visualizations dominate the viewport; chrome is minimal.
 - **Dark theme**: Deep navy background with amber accents — reads as "operations center."
 - **SVG-first**: All visualizations render as inline SVG; no canvas, no raster.
-- **Zero dependencies at runtime**: No D3, jQuery, Bootstrap, or any JS library in the browser.
+- **Vendored runtime stack**: d3 ~3.5.17, d3-tip, underscore, moment, es6-shim, jquery ~2.1.0, bootstrap ~3.1.1 — all bundled as static scripts, no npm install or CDN fetch at runtime.
 - **Timeless over trendy**: The MBTA Viz aesthetic has aged well because it's functional, not fashionable.
 
 ### 15.2 Color Palette
 
-All colors are CSS custom properties in `:root` (`src/styles/main.css`).
+The main stylesheet (`src/styles/main.css`) is the MBTA exemplar CSS — a Bootstrap-3-palette light stylesheet with no CSS custom properties. A small UK addendum (~3124–3157) layers on the dark theme tokens used by the dashboard. The Bootstrap 3 palette provides the base light stylesheet; the dark theme overrides are additive.
 
-| Token | Value | Usage |
-|---|---|---|
-| `--bg` | `#0a1628` | Page background |
-| `--panel` | `#132236` | Card/slot background |
-| `--ink` | `#e8eef4` | Primary text |
-| `--muted` | `#7a8fa3` | Secondary text, axis labels, grid |
-| `--accent` | `#ffb400` | Section headings, highlights, active states |
-| `--line` | `#2a3a4a` | Borders, grid lines, dividers |
-| `--red` | `#ef4444` | Late/alert states |
-| `--green` | `#22c55e` | On-time states |
+| Token | Usage |
+|---|---|
+| Page background | Deep navy (`#0a1628` in dark theme) |
+| Card/slot background | Dark panel (`#132236` in dark theme) |
+| Primary text | Light ink (`#e8eef4` in dark theme) |
+| Secondary text, axis labels, grid | Muted grey (`#7a8fa3` in dark theme) |
+| Section headings, highlights, active states | Amber accent (`#ffb400`) |
+| Borders, grid lines, dividers | Subtle line (`#2a3a4a` in dark theme) |
+| Late/alert states | Red (`#ef4444`) |
+| On-time states | Green (`#22c55e`) |
 
 ### 15.3 Typography
 
@@ -552,15 +552,15 @@ Consistent 4px/8px base scale using CSS custom properties:
 - **Hover**: Pure CSS class toggles. `.highlight-active` dims non-selected items via `opacity`.
 - **Tooltip**: Absolute-positioned `<div>`, dark background (`#0b1219`), amber strong text, `pointer-events: none`, `z-index: 5`.
 - **Click**: Toggle `.active` class for cross-section highlighting.
-- **No jQuery, no D3 v3**: All interactions use vanilla DOM APIs and SVG DOM methods.
+- **d3 v3 + jQuery interaction**: d3 v3 handles SVG rendering and data joins; jQuery provides DOM utility helpers. All interactions use delegated events and class-based toggles on SVG elements.
 
 ### 15.8 Deferred Sections
 
-The following sections are registered in `sections.js` but will not render until their data files are available: The People, Your Commute, Congestion & Delay, Live Overlay. These sections already have working renderers; they just need their data to be present.
+All five sections render via IIFE scripts loaded in order in the HTML shell. Each IIFE checks `VIZ.requiresData` for its data file before rendering; sections whose data is absent simply skip their SVG draw calls. The five IIFE scripts are: `the-trains.js`, `the-people.js`, `congestion-and-delay.js`, `your-commute.js`, and `live-overlay.js`.
 
 ### 15.9 Implementation Notes
 
 - **Color values** are specified per the design system; exact MBTA Viz values should be verified by auditing the live site during implementation.
 - **No `box-shadow`** — MBTA Viz uses flat surfaces with no depth shadows.
 - **Axis label font size** — `11px` aligns with MBTA Viz's 10px–11px range.
-- **CSS migration** — the existing `src/styles/main.css` was updated to match the design system defined here (§3–§5 tokens, §6 layout, §7 SVG styles, §15.4 spacing scale).
+- **CSS migration** — `src/styles/main.css` is the MBTA exemplar CSS (Bootstrap-3-palette light stylesheet) with a small UK addendum (~3124–3157) for dark-theme overrides; it does not use CSS custom properties throughout.

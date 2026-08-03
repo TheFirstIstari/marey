@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { pickHighestVersion, listS3Keys, statusShape } from '../tools/etl/collect.js';
 import { parseTimetable, parseRef } from '../tools/etl/xml.js';
 import { loadPoc } from '../tools/etl/corridors.js';
@@ -189,6 +190,45 @@ test('commute rollups key by destination and expose p10/p50/p90', async () => {
       }
     }
   }
+});
+
+test('collect.js skip path exits 0 with skipped status (regression)', () => {
+  const statusPath = join(process.cwd(), 'raw', 'collect-status.json');
+  const backup = readFileSync(statusPath, 'utf8');
+  try {
+    const cleanEnv = { ...process.env };
+    delete cleanEnv.DARWIN_S3_KEY_ID;
+    delete cleanEnv.DARWIN_S3_SECRET;
+    delete cleanEnv.AWS_PROFILE;
+    const stdout = execFileSync(process.execPath, ['tools/etl/collect.js'], {
+      env: cleanEnv,
+      encoding: 'utf8',
+      cwd: process.cwd(),
+    });
+    assert.ok(stdout.includes('collect: skipped'), `stdout should contain "collect: skipped", got: ${stdout}`);
+    const status = JSON.parse(readFileSync(statusPath, 'utf8'));
+    assert.equal(status.status, 'skipped', `collect-status.json should have status 'skipped', got: ${status.status}`);
+  } finally {
+    writeFileSync(statusPath, backup, 'utf8');
+  }
+});
+
+test('pickHighestVersion picks the highest version from a list of timetable files', () => {
+  const keys = [
+    'PPTimetable/20260802020300_v4.xml.gz',
+    'PPTimetable/20260802020500_v8.xml.gz',
+    'PPTimetable/20260802020500_v7.xml.gz',
+  ];
+  assert.equal(pickHighestVersion(keys), 'PPTimetable/20260802020500_v8.xml.gz');
+});
+
+test('pickHighestVersion picks the highest ref version when {ref: true}', () => {
+  const keys = ['PPTimetable/20260802020500_ref_v99.xml.gz', 'PPTimetable/20260802020500_ref_v8.xml.gz'];
+  assert.equal(pickHighestVersion(keys, { ref: true }), 'PPTimetable/20260802020500_ref_v99.xml.gz');
+});
+
+test('pickHighestVersion returns null for an empty list', () => {
+  assert.equal(pickHighestVersion([]), null);
 });
 
 test.after(() => rmSync(TMP_OUT, { recursive: true, force: true }));
