@@ -335,8 +335,6 @@ VIZ.requiresData([
       .tickSize(5)
       .orient("left");
 
-  var arrow;
-
   // put the contents inside a clipping rectangle so that no data spills out of the scatterplot
   VIZ.createClipRect('bigPickTwoClipper')
     .attr('y', 0)

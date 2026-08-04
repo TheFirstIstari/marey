@@ -523,6 +523,7 @@ VIZ.requiresData([
     // Get a list of [x, y] coordinates for all train trips for
     // both the full Marey and the lined-up Marey
     function getPointsFromStop(xScale, yScale, d, relative) {
+      var startX = xScale(header[d.stops[0].stop + '|' + d.line][0]);
       var points = d.stops.map(function (stop) {
         if (!stop) { return null; }
         var y = yScale(stop.time) - yScale(d.stops[0].time);

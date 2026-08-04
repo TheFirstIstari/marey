@@ -111,7 +111,9 @@ VIZ.requiresData([
   var ranked = turnstile.stops.slice().sort(function (a, b) {
     return b.entrancesByType.all - a.entrancesByType.all;
   });
-  stationDetails[ranked[0].name] = ranked[0].name + ' is the busiest station, with a constant stream of people getting on and off throughout the day.';
+  if (ranked.length > 0) {
+    stationDetails[ranked[0].name] = ranked[0].name + ' is the busiest station, with a constant stream of people getting on and off throughout the day.';
+  }
   if (ranked[1]) {
     stationDetails[ranked[1].name] = ranked[1].name + ' is the second-busiest station, with its heaviest traffic at ' + VIZ.hourToAmPm(peakHour(weekdayPattern(ranked[1], 'entrances'))) + ' in the morning rush.';
   }
@@ -641,12 +643,12 @@ VIZ.requiresData([
   // Now draw the little dots indicating what line(s) the station is on
   // (the exemplar hardcodes the MBTA lines; ours come from the data in the
   // order they first appear in the network)
-  var lines = _.unique(_.pluck(network.links, 'line'));
+  var lines = _.unique(network.links.map(function (l) { return l.line; }));
   var lineDotScale = d3.scale.ordinal()
       .domain(d3.range(lines.length))
       .rangePoints([0, 10]);
   stationRows.selectAll('.line')
-      .data(function (d) { return lines.filter(function (line) { return stopToLine[turnstileToGtfs[d.name]][line]; }); })
+      .data(function (d) { var gtfsId = turnstileToGtfs[d.name]; if (!gtfsId) return []; return lines.filter(function (line) { return stopToLine[gtfsId][line]; }); })
       .enter()
     .append('circle')
       .attr('r', 3)

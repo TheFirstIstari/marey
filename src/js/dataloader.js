@@ -57,12 +57,13 @@
       })
       .get(function(error, data) {
         if (error) {
-          pendingLoads--;
-          if (pendingLoads === 0) { setStatus('All data loaded'); }
           setStatus('Error loading data');
           self.errorListeners.forEach(function (listener) { listener(error); });
+          self.errorListeners = [];
           self.doneListeners = [];
           self.progressListeners = [];
+          self.data[file] = null;
+          self.fileDone(file, null);
         } else {
           self.fileProgress(file, VIZ.fileSizes[name]);
           self.fileDone(file, data);
