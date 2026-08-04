@@ -265,9 +265,6 @@ VIZ.requiresData([
       }
     }
 
-    function createPair(idx) {
-      return [paths[i][idx], true];
-    }
     return null;
   }
 
@@ -513,7 +510,10 @@ VIZ.requiresData([
 
       var percentileBandData = weekdayRollup[to].result;
       var scatterplotData = weekdayRollup[to].actuals;
-      // on iOS don't show as many points to improve performance
+      if (!scatterplotData || scatterplotData.length === 0) {
+        showNoCommuteData(from);
+        return;
+      }
       if (VIZ.ios && scatterplotData.length > 1000) {
         scatterplotData = _.sortBy(_.sample(scatterplotData, 1000), 0);
       }

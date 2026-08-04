@@ -303,9 +303,14 @@ for (let day = 0; day < 7; day++) {
         ins_total: insTotal,
       };
     });
+    const avgDelay = lineEntries.reduce((sum, l) => {
+      const vals = Object.values(l.delay_actual);
+      return sum + (vals.length ? vals[0] : 0);
+    }, 0) / lineEntries.length;
     buckets.push({
       day, secOfDay, time: 1743548400000 + day * 86400000 + secOfDay * 1000,
       ins, outs, ins_total: insTotal,
+      delay_actual: Math.round(avgDelay * 100) / 100,
       lines: lineEntries,
     });
   }

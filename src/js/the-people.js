@@ -652,7 +652,7 @@ VIZ.requiresData([
       .enter()
     .append('circle')
       .attr('r', 3)
-      .attr('cx', function (d, i) { return lineDotScale(i); })
+      .attr('cx', function (d) { return lineDotScale(lines.indexOf(d)); })
       .attr('cy', yScale.rangeBand() - 5)
       .attr('class', function (d) { return 'highlight-dimmable line ' + d; })
       .on('mouseover', function (d) {
