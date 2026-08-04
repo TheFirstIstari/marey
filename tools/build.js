@@ -80,11 +80,11 @@ function build() {
     renameSync(abs, join(DIST, hashedRel));
     assetRename.set(rel, hashedRel);
   }
-  // Rewrite references in the copied index.html
+  // Rewrite references in the copied index.html (handles both single and double quotes)
   const htmlPath = join(DIST, 'index.html');
   let html = readFileSync(htmlPath, 'utf8');
   for (const [oldUrl, newUrl] of assetRename) {
-    html = html.replace(new RegExp(`(src|href)="${oldUrl}"`, 'g'), `$1="${newUrl}"`);
+    html = html.replace(new RegExp(`(src|href)=["']${escapeRegExp(oldUrl)}["']`, 'g'), `$1="${newUrl}"`);
   }
   writeFileSync(htmlPath, html);
 
