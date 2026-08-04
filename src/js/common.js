@@ -90,10 +90,11 @@
       $(this).on(eventType, subSelector, function (evt) {
         var d = d3.select(this).datum();
         try {
+          var o = d3.event;
           d3.event = evt.originalEvent;
           return func.call(this, d);
         } finally {
-          d3.event = null;
+          d3.event = o;
         }
       });
     });
@@ -107,7 +108,7 @@
     var self = this;
     eventTypes.split(/\s+/g).forEach(function (eventType) {
       self.each(function () {
-        $(self).off(eventType);
+        $(this).off(eventType);
       }).on(eventType, null);
     });
     return self;
@@ -202,7 +203,7 @@
     if (id) {
       id = id.substr(1).split(".")[0];
       var $elem = $('a[href^=#' + id + ']');
-      if ($elem.size() > 0) {
+      if ($elem.length > 0) {
         var top = $elem.offset().top;
         IGNORE_SCROLL_EVENTS = true;
         try {

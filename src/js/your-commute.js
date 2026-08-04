@@ -98,7 +98,7 @@ VIZ.requiresData([
     });
 
     // render an arrow to indicate what direction the path is going
-    arrow = mapGlyph.append('g').attr('class', 'arrow').append('text').text('←')
+    var arrow = mapGlyph.append('g').attr('class', 'arrow').append('text').text('←')
       .attr('dx', -14)
       .attr('dy', -3);
 
@@ -257,7 +257,11 @@ VIZ.requiresData([
       var startIdx = paths[i].indexOf(startId);
       var finishIdx = paths[i].indexOf(finishId);
       if (startIdx >= 0 && finishIdx >= 0) {
-        return _.object(d3.range(Math.min(startIdx, finishIdx), Math.max(startIdx, finishIdx) + 1).map(createPair));
+        var result = {};
+        d3.range(Math.min(startIdx, finishIdx), Math.max(startIdx, finishIdx) + 1).forEach(function (idx) {
+          result[paths[i][idx]] = true;
+        });
+        return result;
       }
     }
 
@@ -521,7 +525,8 @@ VIZ.requiresData([
       title.text(fromName + ' to ' + toName);
       subtitle.text('Trip Duration and Time Between Trains On All Weekdays');
 
-      y.domain([-Math.min(30, d3.max(_.pluck(scatterplotData, 2))), d3.max(_.pluck(scatterplotData, 1))]);
+      if (scatterplotData.length === 0) { return; }
+      y.domain([-Math.min(30, d3.max(scatterplotData.map(function (d) { return d[2]; }))), d3.max(scatterplotData.map(function (d) { return d[1]; }))]);
 
       // remove old circles
       dataLayer.selectAll('.circle').remove();

@@ -523,14 +523,9 @@ VIZ.requiresData([
     // Get a list of [x, y] coordinates for all train trips for
     // both the full Marey and the lined-up Marey
     function getPointsFromStop(xScale, yScale, d, relative) {
-      var stops = d.stops.map(function (stop) {
-        return [stop];
-      });
-      var flattenedStops = _.flatten(stops);
-      var startX = xScale(header[d.stops[0].stop + '|' + d.line][0]);
-      var points = flattenedStops.map(function (stop) {
+      var points = d.stops.map(function (stop) {
         if (!stop) { return null; }
-        var y = yScale(stop.time) - yScale(flattenedStops[0].time);
+        var y = yScale(stop.time) - yScale(d.stops[0].time);
         var x = xScale(header[stop.stop + '|' + d.line][0]);
         if (relative) {
           x -= startX;
@@ -714,7 +709,6 @@ VIZ.requiresData([
       var time = linedUpDayScale.invert(y);
       brush.extent([time.getTime() - 60 * 60 * 1000, time.getTime() + 60 * 60 * 1000]);
       d3.selectAll('g.brush').call(brush).on('mousedown.brush', null).on('touchstart.brush', null);
-      brushed();
     });
 
     brushAxis.appendOnce("g", "brush").firstTime
@@ -730,7 +724,7 @@ VIZ.requiresData([
       .tickFormat(function (d) { return Math.round(d / 1000 / 60) + 'm'; })
       .innerTickSize(-linedUpWidth)
       .outerTickSize(0)
-      .ticks(d3.time.minutes, 10)
+      .ticks(d3.time.minute, 10)
       .scale(linedUpTimeScale)
       .orient("left");
 

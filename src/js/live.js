@@ -38,7 +38,7 @@
     ).appendTo(table);
     var body = $('<tbody>');
     trains.forEach(function (t) {
-      var late = t.lateness_min;
+      var late = t.lateness_min || 0;
       var cls = late > 5 ? 'text-danger' : (late < -1 ? 'text-success' : '');
       var lateTxt = (late > 0 ? '+' : '') + late + ' min';
       $('<tr>').append(

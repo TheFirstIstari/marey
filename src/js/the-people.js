@@ -57,7 +57,10 @@ VIZ.requiresData([
   var offset = {};
   var numAnnotationLinesInTable = {};
   turnstile.stops.forEach(function (stop) {
-    averageSecondsBetweenStops[turnstileToGtfs[stop.name]] = stop.entrancesByType.all;
+    var gtfsId = turnstileToGtfs[stop.name];
+    if (gtfsId) {
+      averageSecondsBetweenStops[gtfsId] = stop.entrancesByType.all;
+    }
   });
   var stopToLine = {};
   network.nodes.forEach(function (data) {
@@ -115,7 +118,9 @@ VIZ.requiresData([
   if (ranked[2]) {
     stationDetails[ranked[2].name] = ranked[2].name + ' is the third-busiest station, with its heaviest traffic at ' + VIZ.hourToAmPm(peakHour(weekdayPattern(ranked[2], 'entrances'))) + ' in the morning rush.';
   }
-  stationDetails[ranked[ranked.length - 1].name] = ranked[ranked.length - 1].name + ' is the least-busy station and experiences very little traffic throughout the day.';
+  if (ranked.length > 0) {
+    stationDetails[ranked[ranked.length - 1].name] = ranked[ranked.length - 1].name + ' is the least-busy station and experiences very little traffic throughout the day.';
+  }
 
 
 
@@ -307,8 +312,10 @@ VIZ.requiresData([
             var timePlusOne = VIZ.hourToAmPm((d.hour + 1) % 24);
             var type = d3.select(this).classed('entrances') ? 'entrances' : 'exits';
             turnstile.stops.forEach(function (stop) {
+              var gtfsId = turnstileToGtfs[stop.name];
+              if (!gtfsId) return;
               var datum = stop.times[d.i];
-              updatedSizes[turnstileToGtfs[stop.name]] = datum ? datum[type] : 0;
+              updatedSizes[gtfsId] = datum ? datum[type] : 0;
             });
             d3.selectAll('.section-people .glyph circle')
               .attr('r', function (d) { return perHourSizeScale(updatedSizes[d.id]); });
@@ -568,9 +575,9 @@ VIZ.requiresData([
     .attr('aria-expanded', function (d) { return showingStations[d.name] ? 'true' : 'false'; })
     .on('focus', highlightStationOrStationRange)
     .on('blur', unHighlightStation)
-    .on('keydown', function (event, d) {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
+    .on('keydown', function (d) {
+      if (d3.event.key === 'Enter' || d3.event.key === ' ') {
+        d3.event.preventDefault();
         showingStations[d.name] = !showingStations[d.name];
         updateShownStations(d.name);
         d3.select(this).attr('aria-expanded', showingStations[d.name] ? 'true' : 'false');
@@ -579,7 +586,7 @@ VIZ.requiresData([
 
   // When row clicked, toggle its details below
   stationRows
-    .on('click', function (event, d) {
+    .on('click', function (d) {
       showingStations[d.name] = !showingStations[d.name];
       updateShownStations(d.name);
       d3.select(this).attr('aria-expanded', showingStations[d.name] ? 'true' : 'false');
@@ -636,7 +643,7 @@ VIZ.requiresData([
   // order they first appear in the network)
   var lines = _.unique(_.pluck(network.links, 'line'));
   var lineDotScale = d3.scale.ordinal()
-      .domain([1, 0])
+      .domain(d3.range(lines.length))
       .rangePoints([0, 10]);
   stationRows.selectAll('.line')
       .data(function (d) { return lines.filter(function (line) { return stopToLine[turnstileToGtfs[d.name]][line]; }); })
@@ -762,8 +769,10 @@ VIZ.requiresData([
 
       var updatedSizes = {};
       turnstile.stops.forEach(function (stop) {
+        var gtfsId = turnstileToGtfs[stop.name];
+        if (!gtfsId) return;
         var datum = stop.averagesByType[d.day][d.hour];
-        updatedSizes[turnstileToGtfs[stop.name]] = datum ? datum[d.type] : 0;
+        updatedSizes[gtfsId] = datum ? datum[d.type] : 0;
       });
       d3.selectAll('.section-people .glyph circle')
         .attr('r', function (d) { return perHourSizeScale(updatedSizes[d.id]); });
@@ -899,7 +908,7 @@ VIZ.requiresData([
       }
     });
 
-    var exits = sections.exit().attr('class', '.old-station-section').call(function (d) {
+    var exits = sections.exit().attr('class', 'old-station-section').call(function (d) {
       numAnnotationLinesInTable[d.name] = 0;
     });
     newSections.call(hideDetailed);

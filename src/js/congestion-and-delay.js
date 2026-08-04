@@ -154,7 +154,7 @@ VIZ.requiresData([
       .scale(timeScale)
       .tickFormat(d3.time.format.utc("%-I%p"))
       .orient('top')
-      .ticks(d3.time.hours, 2);
+      .ticks(d3.time.hour, 2);
    chart.append('g')
       .attr('class', 'x axis')
       .attr('transform', 'translate(' + chartMargin.left + ',0)')
@@ -257,7 +257,8 @@ VIZ.requiresData([
     var x = d3.mouse(chartContainerDomNode)[0] - chartMargin.left;
     var y = d3.mouse(chartContainerDomNode)[1] - 14;
     if (y < 0 || x < 0 || y > chartHeight || x > chartWidth) { return; }
-    var day = Math.max(1, d3.bisectLeft(dayRowYScale.range(), y)) % 7;
+    var idx = Math.min(d3.bisectLeft(dayRowYScale.range(), y), 6);
+    var day = dayRowYScale.domain()[idx];
     var theTime = timeScale.invert(x).getTime();
     mouseoverTime(day, theTime);
     if (d3.event) {
@@ -276,10 +277,12 @@ VIZ.requiresData([
     d3.select('.interaction-all .time').text(fullTime);
     var inputData = byDay[day];
     delays = {};
+    if (!inputData || inputData.length === 0) { return; }
     var idx = bisect(inputData, theTime / 1000 - 15 * 60) - 1;
     var ratio = ((theTime-1) % bucketSize) / bucketSize;
     var before = inputData[idx] || inputData[idx+1];
     var after = inputData[idx+1] || before;
+    if (!before || !after) { return; }
     entrances = d3.interpolate(before.ins, after.ins)(ratio);
     turnstileEntryText.text(d3.format('0f')(d3.interpolate(before.ins_total, after.ins_total)(ratio)) + " entries/min");
     var delay = d3.interpolate(before.delay_actual, after.delay_actual)(ratio);
@@ -288,8 +291,14 @@ VIZ.requiresData([
     } else {
       relativeDelayText.text(d3.format('%')(delay) + " slow");
     }
-    var trainDataLeft = _.extend.apply(null, [{}].concat(_.pluck(before.lines, 'delay_actual')));
-    var trainDataRight = _.extend.apply(null, [{}].concat(_.pluck(after.lines, 'delay_actual')));
+    var trainDataLeft = {};
+    (before.lines || []).forEach(function (l) {
+      Object.keys(l.delay_actual || {}).forEach(function (k) { trainDataLeft[k] = l.delay_actual[k]; });
+    });
+    var trainDataRight = {};
+    (after.lines || []).forEach(function (l) {
+      Object.keys(l.delay_actual || {}).forEach(function (k) { trainDataRight[k] = l.delay_actual[k]; });
+    });
     var trainDataMerged = d3.interpolate(trainDataLeft, trainDataRight)(ratio);
 
     function updateCachedDelayForSegment(FROM, TO) {
