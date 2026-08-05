@@ -250,6 +250,17 @@ export async function derivePlanned({ cfg, stations, rawDir, outDir = join(ROOT,
   const allSegments = [];
   const allSchedulesByLine = {};
 
+  // Seed allStops with every PoC station so the network is complete
+  // even for stations that only appear in actual movements, not planned
+  // schedules (e.g. stations served by selected/branch services).
+  for (const s of poCStations) {
+    if (s.crs && !allStops.has(s.crs)) {
+      const nudge = { x: 0, y: 0 };
+      const { x, y } = project(s.lon || 0, s.lat || 0, bbox, kx, ky, nudge);
+      allStops.set(s.crs, { crs: s.crs, x, y, name: s.name || s.crs });
+    }
+  }
+
   for (const line of cfg.lines) {
     const operators = new Set(line.operators);
     const lineSchedules = schedules
